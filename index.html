@@ -4,13 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Sovereign Vault</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
             --ios-bg: #000000;
             --ios-dark-gray: #1C1C1E;
-            --ios-border-light: rgba(255, 255, 255, 0.06);
+            --ios-border-light: rgba(255, 255, 255, 0.08);
             --ios-hint: rgba(255, 255, 255, 0.45);
+            --glass-bg: rgba(120, 120, 128, 0.16);
+            --glass-blur: blur(25px);
+            --glass-border: 0.5px solid rgba(255, 255, 255, 0.1);
         }
 
         * {
@@ -23,7 +25,7 @@
 
         body, html {
             background-color: var(--ios-bg);
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
             color: white;
             margin: 0;
             padding: 0;
@@ -56,6 +58,7 @@
             text-align: center;
             padding: 0 16px;
             position: relative;
+            z-index: 5;
         }
 
         .safe-area-container {
@@ -71,8 +74,8 @@
             height: 120px;
             object-fit: contain;
             display: block;
-            filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.5));
-            transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.25s ease;
+            filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.6));
+            transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.25s ease;
             position: absolute;
             top: 0;
             left: 0;
@@ -97,7 +100,7 @@
             align-items: center;
             opacity: 0;
             pointer-events: none;
-            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
             z-index: -1;
             cursor: grab;
             will-change: transform;
@@ -188,6 +191,7 @@
             width: 100%;
             display: flex;
             position: relative;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
         }
 
         .input-container {
@@ -209,6 +213,7 @@
             -webkit-appearance: none;
             -webkit-user-select: text;
             user-select: text;
+            transition: transform 0.2s ease;
         }
 
         .ios-input::placeholder {
@@ -257,7 +262,7 @@
             display: none;
             grid-template-columns: repeat(3, 1fr);
             gap: 10px;
-            animation: fade-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
         .counter-pill {
@@ -269,6 +274,13 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s ease, background-color 0.2s ease;
+        }
+
+        .counter-pill:active {
+            transform: scale(0.95);
+            background-color: #2C2C2E;
         }
 
         .counter-val {
@@ -297,7 +309,7 @@
             align-items: center;
             transform: translateY(100%);
             transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            padding: calc(20px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom));
+            padding: calc(15px + env(safe-area-inset-top)) 20px calc(15px + env(safe-area-inset-bottom));
         }
 
         .folder-tab.active {
@@ -310,29 +322,39 @@
             justify-content: center;
             align-items: center;
             height: 44px;
-            position: relative;
+            position: absolute;
+            top: calc(15px + env(safe-area-inset-top));
+            left: 0;
+            padding: 0 20px;
         }
 
-        .fallback-back-btn {
-            position: absolute;
-            left: 0;
-            width: 32px;
-            height: 32px;
-            background-color: var(--ios-dark-gray);
-            border: 1px solid var(--ios-border-light);
+        .back-drop-btn, .plus-drop-btn {
+            width: 36px;
+            height: 36px;
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: var(--glass-border);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            position: absolute;
+            transition: transform 0.2s ease;
         }
 
-        .fallback-back-btn svg {
-            width: 14px;
-            height: 14px;
-            fill: none;
-            stroke: #ffffff;
-            stroke-width: 2.5;
+        .back-drop-btn:active, .plus-drop-btn:active {
+            transform: scale(0.9);
+        }
+
+        .back-drop-btn { left: 20px; }
+        .plus-drop-btn { right: 20px; }
+
+        .back-drop-btn img, .plus-drop-btn img {
+            width: 18px;
+            height: 18px;
+            object-fit: contain;
         }
 
         .tab-title {
@@ -341,33 +363,236 @@
             letter-spacing: -0.3px;
         }
 
-        .add-capsule-btn {
+        .tab-content {
+            width: 100%;
+            flex: 1;
+            margin-top: 60px;
+            margin-bottom: 70px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 10px 0;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .tab-content::-webkit-scrollbar {
+            display: none;
+        }
+
+        .vault-item-row {
+            width: 100%;
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: var(--glass-border);
+            border-radius: 16px;
+            padding: 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .vault-item-row:active {
+            transform: scale(0.98);
+        }
+
+        .vault-item-icon {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+        }
+
+        .vault-item-details {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+        }
+
+        .vault-item-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .vault-item-meta {
+            font-size: 12px;
+            color: var(--ios-hint);
+            margin-top: 2px;
+        }
+
+        .vault-item-image {
+            width: 100%;
+            border-radius: 12px;
+            object-fit: cover;
+            max-height: 220px;
+        }
+
+        .add-glass-btn {
             position: absolute;
-            bottom: calc(40px + env(safe-area-inset-bottom));
+            bottom: calc(15px + env(safe-area-inset-bottom));
             left: 50%;
             transform: translateX(-50%);
             height: 52px;
-            background-color: #ffffff;
+            width: calc(100% - 40px);
+            max-width: 320px;
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: var(--glass-border);
             border-radius: 999px;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 0 28px;
             cursor: pointer;
-            box-shadow: 0 8px 24px rgba(255,255,255,0.15);
+            transition: transform 0.2s ease, background-color 0.2s ease;
         }
 
-        .add-capsule-btn img {
+        .add-glass-btn:active {
+            transform: translateX(-50%) scale(0.96);
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .add-glass-btn img {
             width: 18px;
             height: 18px;
             object-fit: contain;
             margin-right: 8px;
+            filter: brightness(0) invert(1);
         }
 
-        .add-capsule-btn span {
-            color: #000000;
+        .add-glass-btn span {
+            color: white;
             font-size: 16px;
             font-weight: 600;
+        }
+
+        .custom-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            padding: 20px;
+        }
+
+        .custom-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .ios-alert-box {
+            width: 100%;
+            max-width: 280px;
+            background: rgba(30, 30, 30, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 0.5px solid rgba(255, 255, 255, 0.15);
+            border-radius: 14px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transform: scale(1.15);
+            transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+            text-align: center;
+        }
+
+        .custom-overlay.active .ios-alert-box {
+            transform: scale(1);
+        }
+
+        .alert-body {
+            padding: 20px 16px;
+        }
+
+        .alert-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: white;
+            margin: 0 0 6px 0;
+        }
+
+        .alert-desc {
+            font-size: 13px;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.85);
+            line-height: 1.4;
+            margin: 0;
+        }
+
+        .alert-input {
+            width: 100%;
+            height: 36px;
+            background: rgba(255,255,255,0.06);
+            border: 0.5px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            margin-top: 12px;
+            padding: 0 10px;
+            color: white;
+            font-size: 14px;
+            outline: none;
+            text-align: center;
+            -webkit-user-select: text;
+            user-select: text;
+        }
+
+        .alert-textarea {
+            width: 100%;
+            height: 100px;
+            background: rgba(255,255,255,0.06);
+            border: 0.5px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            margin-top: 12px;
+            padding: 8px 10px;
+            color: white;
+            font-size: 14px;
+            outline: none;
+            resize: none;
+            -webkit-user-select: text;
+            user-select: text;
+        }
+
+        .alert-buttons {
+            display: flex;
+            border-top: 0.5px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .alert-btn {
+            flex: 1;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 400;
+            cursor: pointer;
+            color: #0A84FF;
+        }
+
+        .alert-btn:active {
+            background-color: rgba(255, 255, 255, 0.04);
+        }
+
+        .alert-btn.bold {
+            font-weight: 600;
+        }
+
+        .alert-btn.cancel {
+            border-right: 0.5px solid rgba(255, 255, 255, 0.12);
+            color: #FF453A;
         }
 
         @keyframes tap-jelly-fast {
@@ -395,49 +620,49 @@
             
             <div class="safe-area-container">
                 <div class="folder-item f-left" onclick="openTab('Тексты')">
-                    <img src="folder.png" alt="Folder">
+                    <img src="folder.png" alt="Folder" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%23FF9500\'><path d=\'M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z\'/></svg>'">
                     <div class="folder-badge">Тексты</div>
                 </div>
                 <div class="folder-item f-center" onclick="openTab('Фото')">
-                    <img src="folder.png" alt="Folder">
+                    <img src="folder.png" alt="Folder" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%23007AFF\'><path d=\'M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z\'/></svg>'">
                     <div class="folder-badge">Фото</div>
                 </div>
-                <div class="folder-item f-right" onclick="openTab('Видео')">
-                    <img src="folder.png" alt="Folder">
-                    <div class="folder-badge">Видео</div>
+                <div class="folder-item f-right" onclick="openTab('Прочее')">
+                    <img src="folder.png" alt="Folder" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%2334C759\'><path d=\'M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z\'/></svg>'">
+                    <div class="folder-badge">Прочее</div>
                 </div>
 
-                <img src="safe.png" alt="Safe Closed" class="safe-image" id="safeClosed" onclick="handleSafeClick()">
-                <img src="safe2.png" alt="Safe Opened" class="safe-image hidden" id="safeOpened" onclick="handleSafeClick()">
+                <img src="safe.png" alt="Safe Closed" class="safe-image" id="safeClosed" onclick="handleSafeClick()" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%238E8E93\'><rect x=\'3\' y=\'11\' width=\'18\' height=\'11\' rx=\'2\' ry=\'2\'/><path d=\'M7 11V7a5 5 0 0 1 10 0v4\' stroke=\'%238E8E93\' stroke-width=\'2\' fill=\'none\'/></svg>'">
+                <img src="safe2.png" alt="Safe Opened" class="safe-image hidden" id="safeOpened" onclick="handleSafeClick()" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%2334C759\'><rect x=\'3\' y=\'11\' width=\'18\' height=\'11\' rx=\'2\' ry=\'2\'/><path d=\'M7 11V7a5 5 0 0 1 10 0v4\' stroke=\'%2334C759\' stroke-width=\'2\' fill=\'none\'/></svg>'">
             </div>
             
             <div class="title-frame">
                 <h1 class="title" id="mainTitle">Добро пожаловать!</h1>
             </div>
             
-            <p class="description" id="mainDesc">Придумай надежные пароль, который содержит минимум 8 символов, заглавную букву и цифру</p>
+            <p class="description" id="mainDesc">Придумай надежный пароль, который содержит минимум 8 символов, заглавную букву и цифру</p>
             
             <div class="controls-row" id="controlsRow">
                 <div class="input-container">
                     <input type="password" class="ios-input" id="passInput" placeholder="ABC123" autocomplete="off" oninput="validatePassword(this)">
                 </div>
                 <div class="login-btn" id="loginBtn" onclick="triggerSystemAlert()">
-                    <img src="login.png" alt="Login">
+                    <img src="login.png" alt="Login" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2334C759\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><polyline points=\'9 18 15 12 9 6\'/></svg>'">
                 </div>
             </div>
 
             <div class="counters-grid" id="countersGrid">
-                <div class="counter-pill">
-                    <div class="counter-val">0</div>
+                <div class="counter-pill" onclick="openTab('Тексты')">
+                    <div class="counter-val" id="countTexts">0</div>
                     <div class="counter-label">Текстов</div>
                 </div>
-                <div class="counter-pill">
-                    <div class="counter-val">0</div>
+                <div class="counter-pill" onclick="openTab('Фото')">
+                    <div class="counter-val" id="countPhotos">0</div>
                     <div class="counter-label">Фото</div>
                 </div>
-                <div class="counter-pill">
-                    <div class="counter-val">0</div>
-                    <div class="counter-label">Видео</div>
+                <div class="counter-pill" onclick="openTab('Прочее')">
+                    <div class="counter-val" id="countOther">0</div>
+                    <div class="counter-label">Прочего</div>
                 </div>
             </div>
 
@@ -446,41 +671,250 @@
 
     <div class="folder-tab" id="folderTab">
         <div class="tab-header">
-            <div class="fallback-back-btn" id="fallbackBack" onclick="closeActiveTab()">
-                <svg viewBox="0 0 24 24">
-                    <path d="M15 19l-7-7 7-7" />
-                </svg>
+            <div class="back-drop-btn" onclick="closeActiveTab()">
+                <img src="back.png" alt="Back" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'2.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><polyline points=\'15 18 9 12 15 6\'/></svg>'">
             </div>
             <div class="tab-title" id="tabTitle">Раздел</div>
+            <div class="plus-drop-btn" id="plusFolderBtn" style="display: none;" onclick="promptAddFolder()">
+                <img src="add.png" alt="Add Folder" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'2.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><line x1=\'12\' y1=\'5\' x2=\'12\' y2=\'19\'/><line x1=\'5\' y1=\'12\' x2=\'19\' y2=\'12\'/></svg>'">
+            </div>
         </div>
-        <div class="add-capsule-btn" onclick="triggerAddAction()">
-            <img src="add.png" alt="Add">
+
+        <div class="tab-content" id="tabContent"></div>
+
+        <div class="add-glass-btn" onclick="triggerAddAction()">
+            <img src="add.png" alt="Add" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'2.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><line x1=\'12\' y1=\'5\' x2=\'12\' y2=\'19\'/><line x1=\'5\' y1=\'12\' x2=\'19\' y2=\'12\'/></svg>'">
             <span>Добавить</span>
         </div>
     </div>
 
+    <div class="custom-overlay" id="customOverlay">
+        <div class="ios-alert-box" id="alertBox">
+            <div class="alert-body" id="alertBody">
+                <h3 class="alert-title" id="alertTitle">Заголовок</h3>
+                <p class="alert-desc" id="alertDesc">Описание сообщения</p>
+                <div id="alertInputsContainer"></div>
+            </div>
+            <div class="alert-buttons" id="alertButtons"></div>
+        </div>
+    </div>
+
+    <input type="file" id="secureFilePicker" style="display: none;" onchange="handleFileSelected(this)">
+
     <script>
         let isWorkspaceUnlocked = false;
-        let tg = window.Telegram ? window.Telegram.WebApp : null;
+        let activeTabName = '';
+        let currentFolderId = 'root';
+        let folderHistoryStack = [];
+        let isAppInitialized = false;
 
-        if (tg) {
-            tg.ready();
-            tg.expand();
-            if (tg.requestFullscreen) {
-                tg.requestFullscreen();
-            }
+        let derivedSessionKey = null; 
+        let cachedSaltHex = '';
+
+        const dbConfig = { name: "SovereignVault_V1", version: 1 };
+        let localDB = null;
+
+        function initIndexedDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(dbConfig.name, dbConfig.version);
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains("vault_meta")) {
+                        db.createObjectStore("vault_meta");
+                    }
+                    if (!db.objectStoreNames.contains("vault_payloads")) {
+                        db.createObjectStore("vault_payloads", { keyPath: "id", autoIncrement: true });
+                    }
+                };
+                request.onsuccess = (event) => {
+                    localDB = event.target.result;
+                    resolve(localDB);
+                };
+                request.onerror = (event) => {
+                    reject(event.target.error);
+                };
+            });
         }
 
-        function triggerVibe() {
-            if (tg && tg.HapticFeedback) {
-                tg.HapticFeedback.impactOccurred('light');
+        function getMetadata(key) {
+            return new Promise((resolve) => {
+                const tx = localDB.transaction("vault_meta", "readonly");
+                const store = tx.objectStore("vault_meta");
+                const req = store.get(key);
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => resolve(null);
+            });
+        }
+
+        function setMetadata(key, value) {
+            return new Promise((resolve) => {
+                const tx = localDB.transaction("vault_meta", "readwrite");
+                const store = tx.objectStore("vault_meta");
+                const req = store.put(value, key);
+                req.onsuccess = () => resolve(true);
+                req.onerror = () => resolve(false);
+            });
+        }
+
+        function saveVaultItem(item) {
+            return new Promise((resolve, reject) => {
+                const tx = localDB.transaction("vault_payloads", "readwrite");
+                const store = tx.objectStore("vault_payloads");
+                const req = store.add(item);
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        function deleteVaultItem(id) {
+            return new Promise((resolve) => {
+                const tx = localDB.transaction("vault_payloads", "readwrite");
+                const store = tx.objectStore("vault_payloads");
+                const req = store.delete(id);
+                req.onsuccess = () => resolve(true);
+                req.onerror = () => resolve(false);
+            });
+        }
+
+        function getVaultItemsByParent(parentId) {
+            return new Promise((resolve) => {
+                const tx = localDB.transaction("vault_payloads", "readonly");
+                const store = tx.objectStore("vault_payloads");
+                const req = store.getAll();
+                req.onsuccess = () => {
+                    const all = req.result || [];
+                    const filtered = all.filter(item => item.parentId === parentId);
+                    resolve(filtered);
+                };
+                req.onerror = () => resolve([]);
+            });
+        }
+
+        function getVaultItemsCount(tabType) {
+            return new Promise((resolve) => {
+                const tx = localDB.transaction("vault_payloads", "readonly");
+                const store = tx.objectStore("vault_payloads");
+                const req = store.getAll();
+                req.onsuccess = () => {
+                    const all = req.result || [];
+                    const filtered = all.filter(item => item.tabType === tabType);
+                    resolve(filtered.length);
+                };
+                req.onerror = () => resolve(0);
+            });
+        }
+
+        function showCustomModal(options) {
+            const overlay = document.getElementById('customOverlay');
+            const titleEl = document.getElementById('alertTitle');
+            const descEl = document.getElementById('alertDesc');
+            const inputContainer = document.getElementById('alertInputsContainer');
+            const buttonsContainer = document.getElementById('alertButtons');
+
+            titleEl.innerText = options.title || '';
+            descEl.innerText = options.description || '';
+            inputContainer.innerHTML = '';
+            buttonsContainer.innerHTML = '';
+
+            let inputs = {};
+            if (options.inputs) {
+                options.inputs.forEach(inp => {
+                    let element;
+                    if (inp.type === 'textarea') {
+                        element = document.createElement('textarea');
+                        element.className = 'alert-textarea';
+                    } else {
+                        element = document.createElement('input');
+                        element.type = inp.type || 'text';
+                        element.className = 'alert-input';
+                    }
+                    element.placeholder = inp.placeholder || '';
+                    element.id = 'customInp_' + inp.id;
+                    inputContainer.appendChild(element);
+                    inputs[inp.id] = element;
+                });
             }
+
+            if (options.buttons) {
+                options.buttons.forEach((btn, index) => {
+                    const btnEl = document.createElement('div');
+                    btnEl.className = 'alert-btn' + (btn.bold ? ' bold' : '') + (btn.cancel ? ' cancel' : '');
+                    btnEl.innerText = btn.text;
+                    btnEl.onclick = () => {
+                        let values = {};
+                        for (let k in inputs) {
+                            values[k] = inputs[k].value;
+                        }
+                        overlay.classList.remove('active');
+                        if (btn.handler) btn.handler(values);
+                    };
+                    buttonsContainer.appendChild(btnEl);
+                });
+            } else {
+                const okBtn = document.createElement('div');
+                okBtn.className = 'alert-btn bold';
+                okBtn.innerText = 'OK';
+                okBtn.onclick = () => overlay.classList.remove('active');
+                buttonsContainer.appendChild(okBtn);
+            }
+
+            overlay.classList.add('active');
+        }
+
+        async function deriveKeyFromPassword(password, saltHex) {
+            const enc = new TextEncoder();
+            const passwordBuffer = enc.encode(password);
+            
+            let salt;
+            if (saltHex) {
+                salt = new Uint8Array(saltHex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+            } else {
+                salt = window.crypto.getRandomValues(new Uint8Array(16));
+            }
+
+            const baseKey = await window.crypto.subtle.importKey(
+                "raw", passwordBuffer, { name: "PBKDF2" }, false, ["deriveKey"]
+            );
+
+            const key = await window.crypto.subtle.deriveKey(
+                { name: "PBKDF2", salt: salt, iterations: 100000, hash: "SHA-256" },
+                baseKey,
+                { name: "AES-GCM", length: 256 },
+                false,
+                ["encrypt", "decrypt"]
+            );
+
+            const computedSaltHex = Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join('');
+            return { key, saltHex: computedSaltHex };
+        }
+
+        async function encryptData(arrayBuffer, cryptoKey) {
+            const iv = window.crypto.getRandomValues(new Uint8Array(12));
+            const encrypted = await window.crypto.subtle.encrypt(
+                { name: "AES-GCM", iv: iv },
+                cryptoKey,
+                arrayBuffer
+            );
+            return {
+                iv: Array.from(iv),
+                payload: encrypted
+            };
+        }
+
+        async function decryptData(encryptedBuffer, ivArray, cryptoKey) {
+            const iv = new Uint8Array(ivArray);
+            const decrypted = await window.crypto.subtle.decrypt(
+                { name: "AES-GCM", iv: iv },
+                cryptoKey,
+                encryptedBuffer
+            );
+            return decrypted;
         }
 
         function validatePassword(input) {
             const val = input.value;
             const hasMinLength = val.length >= 8;
-            const hasUpper = /[A-Z]/.test(val) || /[А-Я]/.test(val);
+            const hasUpper = /[A-Z]/.test(val) || /[а-яА-Я]/.test(val) ? /[A-ZА-Я]/.test(val) : /[A-Z]/.test(val);
             const hasNumber = /[0-9]/.test(val);
             
             const row = document.getElementById('controlsRow');
@@ -492,9 +926,70 @@
         }
 
         function triggerSystemAlert() {
-            const proceed = confirm("Продолжая, вы принимаете наши условия использования.");
-            if (proceed) {
+            const passwordVal = document.getElementById('passInput').value;
+            if (!passwordVal) return;
+
+            if (!isAppInitialized) {
+                showCustomModal({
+                    title: "Соглашение",
+                    description: "Продолжая, вы принимаете наши условия использования. Все ваши данные шифруются на лету и хранятся исключительно на этом устройстве.",
+                    buttons: [
+                        { text: "Отмена", cancel: true, handler: () => {} },
+                        { text: "Продолжить", bold: true, handler: () => executeInitialization(passwordVal) }
+                    ]
+                });
+            } else {
+                executeLogin(passwordVal);
+            }
+        }
+
+        async function executeInitialization(password) {
+            try {
+                const { key, saltHex } = await deriveKeyFromPassword(password);
+                const verificationData = new TextEncoder().encode("verification_token_v1");
+                const encryptedVerification = await encryptData(verificationData, key);
+
+                await setMetadata("vault_salt", saltHex);
+                await setMetadata("vault_verification", encryptedVerification);
+
+                derivedSessionKey = key;
+                cachedSaltHex = saltHex;
+
                 executeTransition();
+            } catch (err) {
+                showCustomModal({ title: "Ошибка", description: "Не удалось инициализировать сейф: " + err.message });
+            }
+        }
+
+        async function executeLogin(password) {
+            try {
+                const storedSalt = await getMetadata("vault_salt");
+                const storedVerification = await getMetadata("vault_verification");
+
+                if (!storedSalt || !storedVerification) {
+                    showCustomModal({ title: "Сбой", description: "Сейф не инициализирован. Перезапустите приложение." });
+                    return;
+                }
+
+                const { key } = await deriveKeyFromPassword(password, storedSalt);
+
+                try {
+                    const decrypted = await decryptData(storedVerification.payload, storedVerification.iv, key);
+                    const decoded = new TextDecoder().decode(decrypted);
+                    if (decoded !== "verification_token_v1") {
+                        throw new Error("Invalid decryption result");
+                    }
+                } catch (e) {
+                    showCustomModal({ title: "Доступ закрыт", description: "Введен неверный пароль. Сейф заблокирован." });
+                    return;
+                }
+
+                derivedSessionKey = key;
+                cachedSaltHex = storedSalt;
+
+                executeTransition();
+            } catch (err) {
+                showCustomModal({ title: "Ошибка", description: "Не удалось проверить ключ: " + err.message });
             }
         }
 
@@ -513,7 +1008,7 @@
             controls.style.transform = 'scale(0.95)';
             controls.style.pointerEvents = 'none';
 
-            setTimeout(() => {
+            setTimeout(async () => {
                 const newTitle = document.createElement('h1');
                 newTitle.className = 'title incoming';
                 newTitle.id = 'mainTitle';
@@ -531,12 +1026,25 @@
                 controls.remove();
                 counters.style.display = 'grid';
                 isWorkspaceUnlocked = true;
+
+                await updateCounters();
+
             }, 300);
+        }
+
+        async function updateCounters() {
+            if (!localDB) return;
+            const textCount = await getVaultItemsCount('Тексты');
+            const photoCount = await getVaultItemsCount('Фото');
+            const otherCount = await getVaultItemsCount('Прочее');
+
+            document.getElementById('countTexts').innerText = textCount;
+            document.getElementById('countPhotos').innerText = photoCount;
+            document.getElementById('countOther').innerText = otherCount;
         }
 
         function handleSafeClick() {
             if (!isWorkspaceUnlocked) return;
-            triggerVibe();
 
             const viewport = document.getElementById('viewport');
             const closedSafe = document.getElementById('safeClosed');
@@ -562,35 +1070,333 @@
             }
         }
 
-        function openTab(type) {
-            triggerVibe();
+        async function openTab(type) {
+            activeTabName = type;
+            currentFolderId = 'root';
+            folderHistoryStack = [];
+            
             document.getElementById('tabTitle').innerText = type;
+            
+            const plusBtn = document.getElementById('plusFolderBtn');
+            if (type === 'Прочее') {
+                plusBtn.style.display = 'flex';
+            } else {
+                plusBtn.style.display = 'none';
+            }
+
             const tab = document.getElementById('folderTab');
             tab.classList.add('active');
 
-            if (tg) {
-                tg.BackButton.show();
-                tg.BackButton.onClick(closeActiveTab);
-                document.getElementById('fallbackBack').style.display = 'none';
-            } else {
-                document.getElementById('fallbackBack').style.display = 'flex';
-            }
+            await renderTabContent();
         }
 
         function closeActiveTab() {
-            triggerVibe();
-            const tab = document.getElementById('folderTab');
-            tab.classList.remove('active');
+            if (folderHistoryStack.length > 0) {
+                currentFolderId = folderHistoryStack.pop();
+                renderTabContent();
+            } else {
+                const tab = document.getElementById('folderTab');
+                tab.classList.remove('active');
+                updateCounters();
+            }
+        }
 
-            if (tg) {
-                tg.BackButton.hide();
-                tg.BackButton.offClick(closeActiveTab);
+        async function renderTabContent() {
+            const container = document.getElementById('tabContent');
+            container.innerHTML = '';
+
+            const items = await getVaultItemsByParent(currentFolderId);
+            const filtered = items.filter(item => item.tabType === activeTabName);
+
+            if (filtered.length === 0) {
+                const empty = document.createElement('div');
+                empty.style.textAlign = 'center';
+                empty.style.color = 'var(--ios-hint)';
+                empty.style.marginTop = '40px';
+                empty.innerText = 'Здесь пока ничего нет';
+                container.appendChild(empty);
+                return;
+            }
+
+            for (const item of filtered) {
+                const row = document.createElement('div');
+                row.className = 'vault-item-row';
+
+                let iconSrc = 'folder.png';
+                let typeText = 'Элемент';
+                if (item.type === 'text') {
+                    iconSrc = 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%23FF9500\'><path d=\'M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z\'/></svg>';
+                    typeText = 'Текст';
+                } else if (item.type === 'file') {
+                    iconSrc = 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%23007AFF\'><path d=\'M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.48-2.02-4.5-4.5-4.5S6 2.52 6 5v12.5c0 3.59 2.91 6.5 6.5 6.5s6.5-2.91 6.5-6.5V6h-1.5z\'/></svg>';
+                    typeText = item.mimeType ? item.mimeType.split('/')[1].toUpperCase() : 'Файл';
+                } else if (item.type === 'folder') {
+                    iconSrc = 'folder.png';
+                    typeText = 'Папка';
+                }
+
+                const icon = document.createElement('img');
+                icon.className = 'vault-item-icon';
+                icon.src = iconSrc;
+                if (item.type === 'folder') {
+                    icon.onerror = () => { icon.src = 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%2334C759\'><path d=\'M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z\'/></svg>'; };
+                }
+                row.appendChild(icon);
+
+                const details = document.createElement('div');
+                details.className = 'vault-item-details';
+
+                let decName = '[Зашифровано]';
+                try {
+                    const decryptedNameBuf = await decryptData(item.encryptedName, item.nameIv, derivedSessionKey);
+                    decName = new TextDecoder().decode(decryptedNameBuf);
+                } catch (e) {
+                    console.error("Name decryption failure", e);
+                }
+
+                const nameEl = document.createElement('div');
+                nameEl.className = 'vault-item-title';
+                nameEl.innerText = decName;
+                details.appendChild(nameEl);
+
+                const metaEl = document.createElement('div');
+                metaEl.className = 'vault-item-meta';
+                metaEl.innerText = typeText;
+                details.appendChild(metaEl);
+
+                row.appendChild(details);
+
+                row.onclick = () => handleItemClick(item, decName);
+                container.appendChild(row);
+            }
+        }
+
+        async function handleItemClick(item, name) {
+            if (item.type === 'folder') {
+                folderHistoryStack.push(currentFolderId);
+                currentFolderId = item.folderUUID;
+                renderTabContent();
+            } else if (item.type === 'text') {
+                try {
+                    const decryptedBuf = await decryptData(item.payload, item.iv, derivedSessionKey);
+                    const decText = new TextDecoder().decode(decryptedBuf);
+                    showCustomModal({
+                        title: name,
+                        description: decText,
+                        buttons: [
+                            { text: "Удалить", cancel: true, handler: () => confirmDelete(item.id) },
+                            { text: "Закрыть", bold: true, handler: () => {} }
+                        ]
+                    });
+                } catch (e) {
+                    showCustomModal({ title: "Ошибка", description: "Не удалось дешифровать текст." });
+                }
+            } else if (item.type === 'file') {
+                try {
+                    const decryptedBuf = await decryptData(item.payload, item.iv, derivedSessionKey);
+                    const blob = new Blob([decryptedBuf], { type: item.mimeType });
+                    const blobUrl = URL.createObjectURL(blob);
+
+                    if (item.mimeType.startsWith('image/')) {
+                        showCustomModal({
+                            title: name,
+                            description: "",
+                            inputs: [],
+                            buttons: [
+                                { text: "Удалить", cancel: true, handler: () => confirmDelete(item.id) },
+                                { text: "Скачать", bold: true, handler: () => triggerBlobDownload(blobUrl, name) },
+                                { text: "Закрыть", bold: true, handler: () => {} }
+                            ]
+                        });
+                        const modalBody = document.getElementById('alertBody');
+                        const img = document.createElement('img');
+                        img.className = 'vault-item-image';
+                        img.src = blobUrl;
+                        modalBody.appendChild(img);
+                    } else {
+                        showCustomModal({
+                            title: name,
+                            description: `Файл формата ${item.mimeType}. Расшифровка завершена успешно.`,
+                            buttons: [
+                                { text: "Удалить", cancel: true, handler: () => confirmDelete(item.id) },
+                                { text: "Скачать", bold: true, handler: () => triggerBlobDownload(blobUrl, name) },
+                                { text: "Закрыть", bold: true, handler: () => {} }
+                            ]
+                        });
+                    }
+                } catch (e) {
+                    showCustomModal({ title: "Ошибка", description: "Не удалось расшифровать файл: " + e.message });
+                }
+            }
+        }
+
+        function triggerBlobDownload(url, filename) {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function confirmDelete(id) {
+            showCustomModal({
+                title: "Удаление",
+                description: "Вы уверены, что хотите удалить этот элемент из сейфа?",
+                buttons: [
+                    { text: "Отмена", cancel: true, handler: () => {} },
+                    { text: "Удалить", bold: true, handler: async () => {
+                        await deleteVaultItem(id);
+                        renderTabContent();
+                    }}
+                ]
+            });
+        }
+
+        function promptAddFolder() {
+            showCustomModal({
+                title: "Новая папка",
+                description: "Укажите имя для создаваемой папки внутри текущего раздела:",
+                inputs: [
+                    { id: 'folderName', type: 'text', placeholder: 'Название папки' }
+                ],
+                buttons: [
+                    { text: "Отмена", cancel: true, handler: () => {} },
+                    { text: "Создать", bold: true, handler: (vals) => executeAddFolder(vals.folderName) }
+                ]
+            });
+        }
+
+        async function executeAddFolder(name) {
+            if (!name) return;
+            try {
+                const uuid = crypto.randomUUID();
+                const encNameData = new TextEncoder().encode(name);
+                const encryptedName = await encryptData(encNameData, derivedSessionKey);
+
+                const item = {
+                    tabType: activeTabName,
+                    type: 'folder',
+                    parentId: currentFolderId,
+                    folderUUID: uuid,
+                    encryptedName: encryptedName.payload,
+                    nameIv: encryptedName.iv
+                };
+
+                await saveVaultItem(item);
+                renderTabContent();
+            } catch (err) {
+                showCustomModal({ title: "Ошибка", description: "Не удалось создать папку: " + err.message });
             }
         }
 
         function triggerAddAction() {
-            triggerVibe();
+            if (activeTabName === 'Тексты') {
+                showCustomModal({
+                    title: "Добавить текст",
+                    description: "Данные будут защищены вашим мастер-ключом:",
+                    inputs: [
+                        { id: 'title', type: 'text', placeholder: 'Заголовок записи' },
+                        { id: 'content', type: 'textarea', placeholder: 'Текст заметки' }
+                    ],
+                    buttons: [
+                        { text: "Отмена", cancel: true, handler: () => {} },
+                        { text: "Зашифровать", bold: true, handler: (vals) => encryptAndSaveText(vals.title, vals.content) }
+                    ]
+                });
+            } else if (activeTabName === 'Фото') {
+                const picker = document.getElementById('secureFilePicker');
+                picker.accept = "image/*";
+                picker.click();
+            } else if (activeTabName === 'Прочее') {
+                const picker = document.getElementById('secureFilePicker');
+                picker.accept = "*/*";
+                picker.click();
+            }
         }
+
+        async function encryptAndSaveText(title, content) {
+            if (!title || !content) return;
+            try {
+                const encNameData = new TextEncoder().encode(title);
+                const encryptedName = await encryptData(encNameData, derivedSessionKey);
+
+                const encContentData = new TextEncoder().encode(content);
+                const encryptedContent = await encryptData(encContentData, derivedSessionKey);
+
+                const item = {
+                    tabType: activeTabName,
+                    type: 'text',
+                    parentId: currentFolderId,
+                    encryptedName: encryptedName.payload,
+                    nameIv: encryptedName.iv,
+                    payload: encryptedContent.payload,
+                    iv: encryptedContent.iv
+                };
+
+                await saveVaultItem(item);
+                renderTabContent();
+            } catch (err) {
+                showCustomModal({ title: "Ошибка", description: "Не удалось зашифровать текст: " + err.message });
+            }
+        }
+
+        function handleFileSelected(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            showCustomModal({
+                title: "Добавление файла",
+                description: `Зашифровать и загрузить файл "${file.name}"?`,
+                buttons: [
+                    { text: "Отмена", cancel: true, handler: () => { input.value = ''; } },
+                    { text: "Загрузить", bold: true, handler: () => executeFileImport(file, input) }
+                ]
+            });
+        }
+
+        async function executeFileImport(file, input) {
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                
+                const encNameData = new TextEncoder().encode(file.name);
+                const encryptedName = await encryptData(encNameData, derivedSessionKey);
+
+                const encryptedPayload = await encryptData(arrayBuffer, derivedSessionKey);
+
+                const item = {
+                    tabType: activeTabName,
+                    type: 'file',
+                    parentId: currentFolderId,
+                    mimeType: file.type || 'application/octet-stream',
+                    encryptedName: encryptedName.payload,
+                    nameIv: encryptedName.iv,
+                    payload: encryptedPayload.payload,
+                    iv: encryptedPayload.iv
+                };
+
+                await saveVaultItem(item);
+                input.value = '';
+                renderTabContent();
+            } catch (err) {
+                showCustomModal({ title: "Ошибка", description: "Не удалось загрузить файл: " + err.message });
+            }
+        }
+
+        window.onload = async () => {
+            try {
+                await initIndexedDB();
+                const salt = await getMetadata("vault_salt");
+                if (salt) {
+                    isAppInitialized = true;
+                    document.getElementById('mainTitle').innerText = "Введите пароль";
+                    document.getElementById('mainDesc').innerText = "Сейф обнаружен на этом устройстве. Введите ключ для разблокировки.";
+                    document.getElementById('passInput').placeholder = "Введите ваш пароль";
+                }
+            } catch (err) {
+                showCustomModal({ title: "БД Ошибка", description: "Ошибка при обращении к IndexedDB: " + err.message });
+            }
+        };
 
         document.querySelectorAll('.folder-item').forEach(folder => {
             let isDragging = false;
