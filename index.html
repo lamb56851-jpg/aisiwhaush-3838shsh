@@ -4,12 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Sovereign Vault</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
             --ios-bg: #000000;
             --ios-dark-gray: #1C1C1E;
             --ios-border-light: rgba(255, 255, 255, 0.06);
             --ios-hint: rgba(255, 255, 255, 0.45);
+        }
+
+        * {
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
+            box-sizing: border-box;
         }
 
         body, html {
@@ -23,8 +32,7 @@
             overflow: hidden;
             position: fixed; 
             -webkit-font-smoothing: antialiased;
-            touch-action: manipulation;
-            box-sizing: border-box;
+            touch-action: none;
         }
 
         .app-viewport {
@@ -47,11 +55,9 @@
             align-items: center;
             text-align: center;
             padding: 0 16px;
-            box-sizing: border-box;
             position: relative;
         }
 
-        /* Контейнер сейфа с поддержкой вылетающих папок */
         .safe-area-container {
             position: relative;
             width: 120px;
@@ -66,14 +72,13 @@
             object-fit: contain;
             display: block;
             filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.5));
-            transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.25s ease;
+            transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.25s ease;
             position: absolute;
             top: 0;
             left: 0;
             cursor: pointer;
         }
 
-        /* Эффект легкого быстрого сжатия сейфа при клике */
         .safe-image:active {
             transform: scale(0.92);
         }
@@ -84,7 +89,6 @@
             pointer-events: none;
         }
 
-        /* Внутренние папки (Файлы) */
         .folder-item {
             position: absolute;
             width: 56px;
@@ -93,11 +97,9 @@
             align-items: center;
             opacity: 0;
             pointer-events: none;
-            /* Вылет сверху с замедлением под конец */
-            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
             z-index: -1;
             cursor: grab;
-            user-select: none;
             will-change: transform;
         }
 
@@ -110,10 +112,9 @@
             height: auto;
             object-fit: contain;
             pointer-events: none;
-            transition: transform 0.1s linear;
+            transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
 
-        /* Названия папок в плавающих капсулах */
         .folder-badge {
             background-color: rgba(28, 28, 30, 0.85);
             border: 1px solid var(--ios-border-light);
@@ -130,26 +131,24 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.4);
         }
 
-        /* Координаты разлета папок во включенном состоянии сейфа */
         .app-viewport.opened .folder-item {
             opacity: 1;
             pointer-events: auto;
             z-index: 15;
         }
-        /* Левая папка */
+        
         .app-viewport.opened .folder-item.f-left {
             transform: translate(-95px, -45px);
         }
-        /* Центральная (Верхняя) папка */
+        
         .app-viewport.opened .folder-item.f-center {
             transform: translate(32px, -85px);
         }
-        /* Правая папка */
+        
         .app-viewport.opened .folder-item.f-right {
             transform: translate(160px, -45px);
         }
 
-        /* Обычный сдвиг заголовка */
         .title-frame {
             height: 34px;
             overflow: hidden;
@@ -185,7 +184,6 @@
             transition: opacity 0.25s ease;
         }
 
-        /* Контейнер интерактивной строки ввода и кнопки */
         .controls-row {
             width: 100%;
             display: flex;
@@ -208,8 +206,9 @@
             font-weight: 400;
             text-align: center;
             outline: none;
-            box-sizing: border-box;
             -webkit-appearance: none;
+            -webkit-user-select: text;
+            user-select: text;
         }
 
         .ios-input::placeholder {
@@ -218,12 +217,10 @@
             text-align: center;
         }
 
-        /* Быстрая мармеладность строки строго при тапе / фокусе */
         .ios-input:focus {
-            animation: tap-jelly-fast 0.3s cubic-bezier(0.2, 1.2, 0.4, 1.4) forwards;
+            animation: tap-jelly-fast 0.25s cubic-bezier(0.25, 1.3, 0.4, 1.4) forwards;
         }
 
-        /* Появление круглой кнопки с легкой мармеладностью */
         .login-btn {
             width: 0;
             height: 52px;
@@ -236,9 +233,8 @@
             overflow: hidden;
             opacity: 0;
             cursor: pointer;
-            box-sizing: border-box;
             pointer-events: none;
-            transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease, margin-left 0.4s ease;
+            transition: width 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease, margin-left 0.35s ease;
         }
 
         .login-btn img {
@@ -253,28 +249,26 @@
             opacity: 1;
             margin-left: 10px;
             pointer-events: auto;
-            animation: button-bounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            animation: button-bounce 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
 
-        /* Контейнер трех раздельных отрезков-счетчиков */
         .counters-grid {
             width: 100%;
-            display: none; /* Включается скриптом */
+            display: none;
             grid-template-columns: repeat(3, 1fr);
             gap: 10px;
-            animation: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation: fade-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
         .counter-pill {
             height: 52px;
             background-color: var(--ios-dark-gray);
             border: 1px solid var(--ios-border-light);
-            border-radius: 999px; /* Капсула */
+            border-radius: 999px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            box-sizing: border-box;
         }
 
         .counter-val {
@@ -290,21 +284,106 @@
             margin-top: 1px;
         }
 
-        /* Анимационные тайминги */
+        .folder-tab {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000000;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            padding: calc(20px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom));
+        }
+
+        .folder-tab.active {
+            transform: translateY(0);
+        }
+
+        .tab-header {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 44px;
+            position: relative;
+        }
+
+        .fallback-back-btn {
+            position: absolute;
+            left: 0;
+            width: 32px;
+            height: 32px;
+            background-color: var(--ios-dark-gray);
+            border: 1px solid var(--ios-border-light);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .fallback-back-btn svg {
+            width: 14px;
+            height: 14px;
+            fill: none;
+            stroke: #ffffff;
+            stroke-width: 2.5;
+        }
+
+        .tab-title {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+
+        .add-capsule-btn {
+            position: absolute;
+            bottom: calc(40px + env(safe-area-inset-bottom));
+            left: 50%;
+            transform: translateX(-50%);
+            height: 52px;
+            background-color: #ffffff;
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 28px;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(255,255,255,0.15);
+        }
+
+        .add-capsule-btn img {
+            width: 18px;
+            height: 18px;
+            object-fit: contain;
+            margin-right: 8px;
+        }
+
+        .add-capsule-btn span {
+            color: #000000;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
         @keyframes tap-jelly-fast {
             0% { transform: scale(1); }
-            40% { transform: scaleX(1.05) scaleY(0.95); }
+            45% { transform: scaleX(1.04) scaleY(0.96); }
             100% { transform: scale(1); }
         }
 
         @keyframes button-bounce {
-            0% { transform: scale(0.6); }
-            70% { transform: scale(1.08); }
+            0% { transform: scale(0.65); }
+            70% { transform: scale(1.06); }
             100% { transform: scale(1); }
         }
 
         @keyframes fade-in-up {
-            0% { opacity: 0; transform: translateY(12px) scale(0.98); }
+            0% { opacity: 0; transform: translateY(10px) scale(0.98); }
             100% { opacity: 1; transform: translateY(0) scale(1); }
         }
     </style>
@@ -315,17 +394,17 @@
         <div class="center-wrapper" onclick="event.stopPropagation()">
             
             <div class="safe-area-container">
-                <div class="folder-item f-left" data-label="Тексты">
+                <div class="folder-item f-left" onclick="openTab('Тексты')">
                     <img src="folder.png" alt="Folder">
                     <div class="folder-badge">Тексты</div>
                 </div>
-                <div class="folder-item f-center" data-label="Фото">
+                <div class="folder-item f-center" onclick="openTab('Фото')">
                     <img src="folder.png" alt="Folder">
                     <div class="folder-badge">Фото</div>
                 </div>
-                <div class="folder-item f-right" data-label="Прочее">
+                <div class="folder-item f-right" onclick="openTab('Видео')">
                     <img src="folder.png" alt="Folder">
-                    <div class="folder-badge">Прочее</div>
+                    <div class="folder-badge">Видео</div>
                 </div>
 
                 <img src="safe.png" alt="Safe Closed" class="safe-image" id="safeClosed" onclick="handleSafeClick()">
@@ -358,19 +437,45 @@
                 </div>
                 <div class="counter-pill">
                     <div class="counter-val">0</div>
-                    <div class="counter-label">Прочего</div>
+                    <div class="counter-label">Видео</div>
                 </div>
             </div>
 
         </div>
     </div>
 
+    <div class="folder-tab" id="folderTab">
+        <div class="tab-header">
+            <div class="fallback-back-btn" id="fallbackBack" onclick="closeActiveTab()">
+                <svg viewBox="0 0 24 24">
+                    <path d="M15 19l-7-7 7-7" />
+                </svg>
+            </div>
+            <div class="tab-title" id="tabTitle">Раздел</div>
+        </div>
+        <div class="add-capsule-btn" onclick="triggerAddAction()">
+            <img src="add.png" alt="Add">
+            <span>Добавить</span>
+        </div>
+    </div>
+
     <script>
         let isWorkspaceUnlocked = false;
+        let tg = window.Telegram ? window.Telegram.WebApp : null;
 
-        document.addEventListener('touchstart', e => { 
-            if (e.touches.length > 1) e.preventDefault(); 
-        }, { passive: false });
+        if (tg) {
+            tg.ready();
+            tg.expand();
+            if (tg.requestFullscreen) {
+                tg.requestFullscreen();
+            }
+        }
+
+        function triggerVibe() {
+            if (tg && tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('light');
+            }
+        }
 
         function validatePassword(input) {
             const val = input.value;
@@ -404,7 +509,6 @@
             title.style.opacity = '0';
             desc.style.opacity = '0';
 
-            // Плавно скрываем только кнопку авторизации, а инпут подменяем счетчиками
             controls.style.opacity = '0';
             controls.style.transform = 'scale(0.95)';
             controls.style.pointerEvents = 'none';
@@ -413,7 +517,7 @@
                 const newTitle = document.createElement('h1');
                 newTitle.className = 'title incoming';
                 newTitle.id = 'mainTitle';
-                newTitle.innerText = 'Ваш сейф, имя';
+                newTitle.innerText = 'Воркспейс';
                 frame.appendChild(newTitle);
 
                 setTimeout(() => {
@@ -424,36 +528,31 @@
                 desc.innerText = 'Храните здесь тексты, фотографии и видео анонимно';
                 desc.style.opacity = '1';
 
-                // Прячем старую строку ввода и выводим 3 равных отрезка
                 controls.remove();
                 counters.style.display = 'grid';
                 isWorkspaceUnlocked = true;
-
             }, 300);
         }
 
-        // Клик по сейфу после авторизации
         function handleSafeClick() {
             if (!isWorkspaceUnlocked) return;
+            triggerVibe();
 
             const viewport = document.getElementById('viewport');
             const closedSafe = document.getElementById('safeClosed');
             const openedSafe = document.getElementById('safeOpened');
 
             if (!viewport.classList.contains('opened')) {
-                // Анимация открытия сейфа
                 closedSafe.classList.add('hidden');
                 openedSafe.classList.remove('hidden');
                 viewport.classList.add('opened');
             } else {
-                // Закрытие сейфа
                 viewport.classList.remove('opened');
                 openedSafe.classList.add('hidden');
                 closedSafe.classList.remove('hidden');
             }
         }
 
-        // Закрытие папок при клике мимо сейфа
         function closeFolders(event) {
             const viewport = document.getElementById('viewport');
             if (viewport.classList.contains('opened')) {
@@ -463,7 +562,36 @@
             }
         }
 
-        // Логика перетаскивания (Drag) с деформацией папок в сторону движения
+        function openTab(type) {
+            triggerVibe();
+            document.getElementById('tabTitle').innerText = type;
+            const tab = document.getElementById('folderTab');
+            tab.classList.add('active');
+
+            if (tg) {
+                tg.BackButton.show();
+                tg.BackButton.onClick(closeActiveTab);
+                document.getElementById('fallbackBack').style.display = 'none';
+            } else {
+                document.getElementById('fallbackBack').style.display = 'flex';
+            }
+        }
+
+        function closeActiveTab() {
+            triggerVibe();
+            const tab = document.getElementById('folderTab');
+            tab.classList.remove('active');
+
+            if (tg) {
+                tg.BackButton.hide();
+                tg.BackButton.offClick(closeActiveTab);
+            }
+        }
+
+        function triggerAddAction() {
+            triggerVibe();
+        }
+
         document.querySelectorAll('.folder-item').forEach(folder => {
             let isDragging = false;
             let startX, startY;
@@ -493,14 +621,19 @@
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-                const deltaX = clientX - startX;
-                const deltaY = clientY - startY;
+                let deltaX = clientX - startX;
+                let deltaY = clientY - startY;
 
-                // Ограничиваем натяжение физики деформации
-                const skewX = Math.min(Math.max(deltaX * 0.15, -15), 15);
-                const scaleX = 1 + Math.abs(deltaX) * 0.002;
+                const maxDist = 18;
+                const dist = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                if (dist > maxDist) {
+                    deltaX = (deltaX / dist) * maxDist;
+                    deltaY = (deltaY / dist) * maxDist;
+                }
 
-                // Применяем трансляцию положения и желейное искажение картинки папки
+                const skewX = deltaX * 0.4;
+                const scaleX = 1 + Math.abs(deltaX) * 0.003;
+
                 folder.style.zIndex = '100';
                 img.style.transform = `translate(${deltaX}px, ${deltaY}px) skewX(${skewX}deg) scaleX(${scaleX})`;
             }
@@ -510,11 +643,10 @@
                 isDragging = false;
                 folder.style.zIndex = '15';
                 
-                // Плавный возврат картинки на законное нативное место
-                img.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                img.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
                 img.style.transform = 'translate(0, 0) skewX(0deg) scaleX(1)';
                 
-                setTimeout(() => { img.style.transition = 'transform 0.1s linear'; }, 400);
+                setTimeout(() => { img.style.transition = 'transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1)'; }, 300);
 
                 document.removeEventListener('mousemove', dragMove);
                 document.removeEventListener('touchmove', dragMove);
@@ -525,3 +657,4 @@
     </script>
 </body>
 </html>
+
