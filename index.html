@@ -7,10 +7,7 @@
     <style>
         :root {
             --ios-bg: #000000;
-            
-            /* Нативный темно-серый цвет iOS (системный заполняющий цвет для темной темы) */
             --ios-dark-gray: #1C1C1E;
-            /* Тонкая рамка чуть светлее основного фона */
             --ios-border-light: rgba(255, 255, 255, 0.06);
             --ios-hint: rgba(255, 255, 255, 0.45);
         }
@@ -30,64 +27,99 @@
             box-sizing: border-box;
         }
 
-        /* Центральный контейнер */
-        .center-wrapper {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+        /* Защита от поднятия контента клавиатурой */
+        .app-viewport {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            max-width: 320px; /* Фиксированная ширина текста и элементов */
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .center-wrapper {
+            width: 100%;
+            max-width: 320px;
             display: flex;
             flex-direction: column;
             align-items: center;
             text-align: center;
             padding: 0 16px;
             box-sizing: border-box;
+            transition: opacity 0.5s ease;
         }
 
-        /* Крупное изображение сейфа */
         .safe-image {
             width: 120px;
             height: 120px;
             object-fit: contain;
             margin-bottom: 28px;
             display: block;
-            /* Мягкая тень, чтобы картинка не сливалась с черным фоном */
             filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.5));
         }
 
-        /* Жирный Apple-style заголовок */
+        /* Контейнер для iOS-анимации сдвига заголовка */
+        .title-frame {
+            height: 34px;
+            overflow: hidden;
+            position: relative;
+            width: 100%;
+            margin-bottom: 12px;
+        }
+
         .title {
             font-size: 28px;
             font-weight: 700;
             letter-spacing: -0.03em;
-            margin: 0 0 12px 0;
+            margin: 0;
             color: white;
+            position: absolute;
+            width: 100%;
+            left: 0;
+            top: 0;
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease;
         }
 
-        /* Описание, строго выровненное по ширине */
+        /* Начальное состояние для нового заголовка (приезжает сверху) */
+        .title.incoming {
+            transform: translateY(-100%);
+            opacity: 0;
+        }
+
+        /* Описание с плавной и быстрой прозрачностью */
         .description {
             font-size: 14px;
             font-weight: 400;
             line-height: 1.45;
             color: var(--ios-hint);
             margin: 0 0 36px 0;
+            transition: opacity 0.25s ease;
         }
 
-        /* Контейнер строки ввода */
-        .input-container {
+        /* Интерактивная зона ввода */
+        .controls-row {
             width: 100%;
+            display: flex;
+            gap: 0;
             position: relative;
+            transition: opacity 0.4s ease, transform 0.4s ease;
         }
 
-        /* Нативная темно-серая строка ввода iOS */
+        .input-container {
+            flex: 1;
+            position: relative;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
         .ios-input {
             width: 100%;
             height: 52px;
             background-color: var(--ios-dark-gray);
             border: 1px solid var(--ios-border-light);
-            border-radius: 999px; /* Полностью круглые углы (Pill-shape) */
+            border-radius: 999px;
             color: white;
             font-size: 17px;
             font-weight: 400;
@@ -95,66 +127,157 @@
             outline: none;
             box-sizing: border-box;
             -webkit-appearance: none;
-            
-            /* Плавное возвращение в исходную форму */
-            transition: background-color 0.3s ease, border-color 0.3s ease;
+            transition: border-color 0.3s ease;
         }
 
-        /* Подсказка строго по центру */
         .ios-input::placeholder {
             color: var(--ios-hint);
             opacity: 0.6;
             text-align: center;
         }
 
-        /* Эффект «Жидкой капли» при клике/фокусе */
+        /* Более выраженная мармеладная деформация */
         .ios-input:focus {
-            background-color: #2C2C2E; /* Слегка светлеет при активном вводе */
-            border-color: rgba(255, 255, 255, 0.12);
-            /* Анимация упругого желеобразного толчка */
-            animation: focus-bounce 0.45s cubic-bezier(0.25, 1.25, 0.5, 1.4) forwards;
+            animation: focus-jelly 0.5s cubic-bezier(0.25, 1.4, 0.5, 1.5) forwards;
         }
 
-        /* Тайминги деформации жидкого стекла */
-        @keyframes focus-bounce {
-            0% {
-                transform: scale(1);
-            }
-            30% {
-                /* В момент нажатия слегка расплывается по горизонтали и сжимается */
-                transform: scaleX(1.04) scaleY(0.94);
-            }
-            60% {
-                /* Компенсационное вытягивание вверх */
-                transform: scaleX(0.98) scaleY(1.02);
-            }
-            100% {
-                /* Возврат в идеальную форму */
-                transform: scale(1);
-            }
+        /* Стеклянная кнопка Login */
+        .login-btn {
+            width: 0;
+            height: 52px;
+            background-color: var(--ios-dark-gray);
+            border: 1px solid var(--ios-border-light);
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            opacity: 0;
+            cursor: pointer;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, margin-left 0.4s ease;
+            box-sizing: border-box;
+            pointer-events: none;
+        }
+
+        .login-btn img {
+            width: 22px;
+            height: 22px;
+            object-fit: contain;
+            display: block;
+        }
+
+        /* Класс активации кнопки при валидном пароле */
+        .controls-row.valid .login-btn {
+            width: 52px;
+            opacity: 1;
+            margin-left: 10px;
+            pointer-events: auto;
+        }
+
+        @keyframes focus-jelly {
+            0% { transform: scale(1); }
+            25% { transform: scaleX(1.08) scaleY(0.90); }
+            50% { transform: scaleX(0.95) scaleY(1.04); }
+            75% { transform: scaleX(1.02) scaleY(0.98); }
+            100% { transform: scale(1); }
         }
     </style>
 </head>
 <body>
 
-    <div class="center-wrapper">
-        <!-- Твоя картинка safe.png -->
-        <img src="safe.png" alt="Safe" class="safe-image">
-        
-        <h1 class="title">Добро пожаловать!</h1>
-        <p class="description">Придумай надежные пароль, который содержит минимум 8 символов, заглавную букву и цифру</p>
-        
-        <div class="input-container">
-            <!-- Строка ввода с анимацией упругого клика -->
-            <input type="password" class="ios-input" placeholder="ABC123" autocomplete="off">
+    <div class="app-viewport">
+        <div class="center-wrapper">
+            <img src="safe.png" alt="Safe" class="safe-image">
+            
+            <div class="title-frame">
+                <h1 class="title" id="mainTitle">Добро пожаловать!</h1>
+            </div>
+            
+            <p class="description" id="mainDesc">Придумай надежные пароль, который содержит минимум 8 символов, заглавную букву и цифру</p>
+            
+            <div class="controls-row" id="controlsRow">
+                <div class="input-container">
+                    <input type="password" class="ios-input" id="passInput" placeholder="ABC123" autocomplete="off" oninput="validatePassword(this)">
+                </div>
+                <div class="login-btn" id="loginBtn" onclick="triggerSystemAlert()">
+                    <img src="login.png" alt="Login">
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        // Глушим системный зум iOS при двойном тапе, сохраняя нативность
+        // Блокируем стандартный зум
         document.addEventListener('touchstart', e => { 
             if (e.touches.length > 1) e.preventDefault(); 
         }, { passive: false });
+
+        // Валидация: минимум 8 знаков, 1 заглавная, 1 цифра
+        function validatePassword(input) {
+            const val = input.value;
+            const hasMinLength = val.length >= 8;
+            const hasUpper = /[A-Z]/.test(val) || /[А-Я]/.test(val);
+            const hasNumber = /[0-9]/.test(val);
+            
+            const row = document.getElementById('controlsRow');
+            
+            if (hasMinLength && hasUpper && hasNumber) {
+                row.classList.add('valid');
+            } else {
+                row.classList.remove('valid');
+            }
+        }
+
+        // Вызов нативного системного конфирма (в браузерах это Ок/Отмена)
+        function triggerSystemAlert() {
+            const proceed = confirm("Продолжая, вы принимаете наши условия использования.");
+            if (proceed) {
+                executeTransition();
+            }
+        }
+
+        // iOS анимация смены экранов
+        function executeTransition() {
+            const title = document.getElementById('mainTitle');
+            const desc = document.getElementById('mainDesc');
+            const controls = document.getElementById('controlsRow');
+            const frame = title.parentElement;
+
+            // 1. Старый заголовок уезжает вниз и растворяется
+            title.style.transform = 'translateY(100%)';
+            title.style.opacity = '0';
+
+            // 2. Описание быстро исчезает
+            desc.style.opacity = '0';
+
+            // 3. Строка ввода и кнопка исчезают
+            controls.style.opacity = '0';
+            controls.style.transform = 'scale(0.95)';
+            controls.style.pointerEvents = 'none';
+
+            setTimeout(() => {
+                // Создаем и настраиваем входящий заголовок
+                const newTitle = document.createElement('h1');
+                newTitle.className = 'title incoming';
+                newTitle.id = 'mainTitle';
+                newTitle.innerText = 'Ваш сейф, имя';
+                frame.appendChild(newTitle);
+
+                // Запускаем приезд сверху
+                setTimeout(() => {
+                    newTitle.style.transform = 'translateY(0)';
+                    newTitle.style.opacity = '1';
+                }, 50);
+
+                // Меняем текст описания и проявляем его
+                desc.innerText = 'Храните здесь тексты, фотографии и видео анонимно';
+                desc.style.opacity = '1';
+
+                // Полностью убираем инпуты из DOM после завершения анимации
+                setTimeout(() => { controls.remove(); }, 400);
+
+            }, 300);
+        }
     </script>
 </body>
 </html>
