@@ -1,1635 +1,258 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Sovereign Vault</title>
-    <style>
-        :root {
-            --ios-bg: #000000;
-            --ios-dark-gray: #1C1C1E;
-            --ios-border-light: rgba(255, 255, 255, 0.08);
-            --ios-hint: rgba(255, 255, 255, 0.45);
-            --glass-bg: rgba(120, 120, 128, 0.16);
-            --glass-blur: blur(25px);
-            --glass-border: 0.5px solid rgba(255, 255, 255, 0.1);
-        }
-
-        * {
-            -webkit-user-select: none;
-            user-select: none;
-            -webkit-touch-callout: none;
-            -webkit-tap-highlight-color: transparent;
-            box-sizing: border-box;
-        }
-
-        body, html {
-            background-color: var(--ios-bg);
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
-            color: white;
-            margin: 0;
-            padding: 0;
-            height: 100vh;
-            width: 100%;
-            overflow: hidden;
-            position: fixed; 
-            -webkit-font-smoothing: antialiased;
-            touch-action: none;
-        }
-
-        .app-viewport {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .center-wrapper {
-            width: 100%;
-            max-width: 320px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            padding: 0 16px;
-            position: relative;
-            z-index: 5;
-        }
-
-        .safe-area-container {
-            position: relative;
-            width: 120px;
-            height: 120px;
-            margin-bottom: 28px;
-            z-index: 10;
-        }
-
-        .safe-image {
-            width: 120px;
-            height: 120px;
-            object-fit: contain;
-            display: block;
-            filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.6));
-            transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.25s ease;
-            position: absolute;
-            top: 0;
-            left: 0;
-            cursor: pointer;
-        }
-
-        .safe-image:active {
-            transform: scale(0.92);
-        }
-
-        .safe-image.hidden {
-            opacity: 0;
-            transform: scale(0.8);
-            pointer-events: none;
-        }
-
-        .folder-item {
-            position: absolute;
-            width: 56px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
-            z-index: -1;
-            cursor: grab;
-            will-change: transform;
-        }
-
-        .folder-item:active {
-            cursor: grabbing;
-        }
-
-        .folder-item img {
-            width: 50px;
-            height: auto;
-            object-fit: contain;
-            pointer-events: none;
-            transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
-        }
-
-        .folder-badge {
-            background-color: rgba(28, 28, 30, 0.85);
-            border: 1px solid var(--ios-border-light);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            padding: 3px 8px;
-            border-radius: 999px;
-            font-size: 10px;
-            font-weight: 500;
-            color: white;
-            white-space: nowrap;
-            margin-top: 4px;
-            pointer-events: none;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-        }
-
-        .app-viewport.opened .folder-item {
-            opacity: 1;
-            pointer-events: auto;
-            z-index: 15;
-        }
-        
-        .app-viewport.opened .folder-item.f-left {
-            transform: translate(-95px, -45px);
-        }
-        
-        .app-viewport.opened .folder-item.f-center {
-            transform: translate(32px, -85px);
-        }
-        
-        .app-viewport.opened .folder-item.f-right {
-            transform: translate(160px, -45px);
-        }
-
-        .title-frame {
-            height: 34px;
-            overflow: hidden;
-            position: relative;
-            width: 100%;
-            margin-bottom: 12px;
-        }
-
-        .title {
-            font-size: 28px;
-            font-weight: 700;
-            letter-spacing: -0.03em;
-            margin: 0;
-            color: white;
-            position: absolute;
-            width: 100%;
-            left: 0;
-            top: 0;
-            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease;
-        }
-
-        .title.incoming {
-            transform: translateY(-100%);
-            opacity: 0;
-        }
-
-        .description {
-            font-size: 14px;
-            font-weight: 400;
-            line-height: 1.45;
-            color: var(--ios-hint);
-            margin: 0 0 36px 0;
-            transition: opacity 0.25s ease;
-        }
-
-        .controls-row {
-            width: 100%;
-            display: flex;
-            position: relative;
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
-        }
-
-        .input-container {
-            flex: 1;
-            position: relative;
-        }
-
-        .ios-input {
-            width: 100%;
-            height: 52px;
-            background-color: var(--ios-dark-gray);
-            border: 1px solid var(--ios-border-light);
-            border-radius: 999px;
-            color: white;
-            font-size: 17px;
-            font-weight: 400;
-            text-align: center;
-            outline: none;
-            -webkit-appearance: none;
-            -webkit-user-select: text;
-            user-select: text;
-            transition: transform 0.2s ease;
-        }
-
-        .ios-input::placeholder {
-            color: var(--ios-hint);
-            opacity: 0.6;
-            text-align: center;
-        }
-
-        .ios-input:focus {
-            animation: tap-jelly-fast 0.25s cubic-bezier(0.25, 1.3, 0.4, 1.4) forwards;
-        }
-
-        .login-btn {
-            width: 0;
-            height: 52px;
-            background-color: var(--ios-dark-gray);
-            border: 1px solid var(--ios-border-light);
-            border-radius: 999px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            opacity: 0;
-            cursor: pointer;
-            pointer-events: none;
-            transition: width 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease, margin-left 0.35s ease;
-        }
-
-        .login-btn img {
-            width: 22px;
-            height: 22px;
-            object-fit: contain;
-            display: block;
-        }
-
-        .controls-row.valid .login-btn {
-            width: 52px;
-            opacity: 1;
-            margin-left: 10px;
-            pointer-events: auto;
-            animation: button-bounce 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        }
-
-        .counters-grid {
-            width: 100%;
-            display: none;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            animation: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-
-        .counter-pill {
-            height: 52px;
-            background-color: var(--ios-dark-gray);
-            border: 1px solid var(--ios-border-light);
-            border-radius: 999px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: transform 0.2s ease, background-color 0.2s ease;
-        }
-
-        .counter-pill:active {
-            transform: scale(0.95);
-            background-color: #2C2C2E;
-        }
-
-        .counter-val {
-            font-size: 16px;
-            font-weight: 700;
-            line-height: 1.1;
-        }
-
-        .counter-label {
-            font-size: 10px;
-            font-weight: 500;
-            color: var(--ios-hint);
-            margin-top: 1px;
-        }
-
-        .folder-tab {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background-color: #000000;
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            transform: translateY(100%);
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            padding: calc(15px + env(safe-area-inset-top)) 20px calc(15px + env(safe-area-inset-bottom));
-        }
-
-        .folder-tab.active {
-            transform: translateY(0);
-        }
-
-        .tab-header {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 44px;
-            position: absolute;
-            top: 15px; /* Strict 15px requirement offset */
-            left: 0;
-            padding: 0 20px;
-        }
-
-        .back-drop-btn, .plus-drop-btn {
-            width: 36px;
-            height: 36px;
-            background: var(--glass-bg);
-            backdrop-filter: var(--glass-blur);
-            -webkit-backdrop-filter: var(--glass-blur);
-            border: var(--glass-border);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            position: absolute;
-            transition: transform 0.2s ease;
-        }
-
-        .back-drop-btn:active, .plus-drop-btn:active {
-            transform: scale(0.9);
-        }
-
-        .back-drop-btn { left: 20px; }
-        .plus-drop-btn { right: 20px; }
-
-        .back-drop-btn img, .plus-drop-btn img {
-            width: 18px;
-            height: 18px;
-            object-fit: contain;
-        }
-
-        .tab-title {
-            font-size: 20px;
-            font-weight: 700;
-            letter-spacing: -0.3px;
-        }
-
-        .tab-content {
-            width: 100%;
-            flex: 1;
-            margin-top: 60px;
-            margin-bottom: 70px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            padding: 10px 0;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .tab-content::-webkit-scrollbar {
-            display: none;
-        }
-
-        .vault-item-row {
-            width: 100%;
-            background: var(--glass-bg);
-            backdrop-filter: var(--glass-blur);
-            -webkit-backdrop-filter: var(--glass-blur);
-            border: var(--glass-border);
-            border-radius: 16px;
-            padding: 14px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-            transition: transform 0.2s ease;
-        }
-
-        .vault-item-row:active {
-            transform: scale(0.98);
-        }
-
-        .vault-item-icon {
-            width: 40px;
-            height: 40px;
-            object-fit: contain;
-        }
-
-        .vault-item-details {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            text-align: left;
-        }
-
-        .vault-item-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: white;
-        }
-
-        .vault-item-meta {
-            font-size: 12px;
-            color: var(--ios-hint);
-            margin-top: 2px;
-        }
-
-        .add-glass-btn {
-            position: absolute;
-            bottom: 15px; /* Strict 15px offset requirements */
-            left: 50%;
-            transform: translateX(-50%);
-            height: 52px;
-            width: calc(100% - 40px);
-            max-width: 320px;
-            background: var(--glass-bg);
-            backdrop-filter: var(--glass-blur);
-            -webkit-backdrop-filter: var(--glass-blur);
-            border: var(--glass-border);
-            border-radius: 999px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: transform 0.2s ease, background-color 0.2s ease;
-        }
-
-        .add-glass-btn:active {
-            transform: translateX(-50%) scale(0.96);
-            background-color: rgba(255, 255, 255, 0.05);
-        }
-
-        .add-glass-btn img {
-            width: 18px;
-            height: 18px;
-            object-fit: contain;
-            margin-right: 8px;
-            filter: brightness(0) invert(1);
-        }
-
-        .add-glass-btn span {
-            color: white;
-            font-size: 16px;
-            font-weight: 600;
-        }
-
-        .custom-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            z-index: 200;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-            padding: 20px;
-        }
-
-        .custom-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .ios-alert-box {
-            width: 100%;
-            max-width: 280px;
-            background: rgba(30, 30, 30, 0.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 0.5px solid rgba(255, 255, 255, 0.15);
-            border-radius: 14px;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            transform: scale(1.15);
-            transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
-            text-align: center;
-        }
-
-        .custom-overlay.active .ios-alert-box {
-            transform: scale(1);
-        }
-
-        .alert-body {
-            padding: 20px 16px;
-        }
-
-        .alert-title {
-            font-size: 17px;
-            font-weight: 600;
-            color: white;
-            margin: 0 0 6px 0;
-        }
-
-        .alert-desc {
-            font-size: 13px;
-            font-weight: 400;
-            color: rgba(255, 255, 255, 0.85);
-            line-height: 1.4;
-            margin: 0;
-        }
-
-        .alert-input {
-            width: 100%;
-            height: 36px;
-            background: rgba(255,255,255,0.06);
-            border: 0.5px solid rgba(255,255,255,0.1);
-            border-radius: 8px;
-            margin-top: 12px;
-            padding: 0 10px;
-            color: white;
-            font-size: 14px;
-            outline: none;
-            text-align: center;
-            -webkit-user-select: text;
-            user-select: text;
-        }
-
-        .alert-textarea {
-            width: 100%;
-            height: 100px;
-            background: rgba(255,255,255,0.06);
-            border: 0.5px solid rgba(255,255,255,0.1);
-            border-radius: 8px;
-            margin-top: 12px;
-            padding: 8px 10px;
-            color: white;
-            font-size: 14px;
-            outline: none;
-            resize: none;
-            -webkit-user-select: text;
-            user-select: text;
-        }
-
-        .alert-buttons {
-            display: flex;
-            border-top: 0.5px solid rgba(255, 255, 255, 0.12);
-        }
-
-        .alert-btn {
-            flex: 1;
-            height: 44px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            font-weight: 400;
-            cursor: pointer;
-            color: #0A84FF;
-        }
-
-        .alert-btn:active {
-            background-color: rgba(255, 255, 255, 0.04);
-        }
-
-        .alert-btn.bold {
-            font-weight: 600;
-        }
-
-        .alert-btn.cancel {
-            border-right: 0.5px solid rgba(255, 255, 255, 0.12);
-            color: #FF453A;
-        }
-
-        .immersive-lightbox {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background-color: rgba(0, 0, 0, 0.95);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            z-index: 300;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .immersive-lightbox.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .lightbox-close {
-            position: absolute;
-            top: calc(20px + env(safe-area-inset-top));
-            right: 20px;
-            width: 38px;
-            height: 38px;
-            background-color: rgba(255, 255, 255, 0.15);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            border: 0.5px solid rgba(255, 255, 255, 0.2);
-            z-index: 310;
-            transition: transform 0.2s ease;
-        }
-
-        .lightbox-close:active {
-            transform: scale(0.9);
-        }
-
-        .lightbox-content {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .lightbox-image {
-            max-width: 100%;
-            max-height: 80%;
-            object-fit: contain;
-            border-radius: 12px;
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8);
-            transform: scale(0.9);
-            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .immersive-lightbox.active .lightbox-image {
-            transform: scale(1);
-        }
-
-        /* Keyframes and Transitions */
-        @keyframes tap-jelly-fast {
-            0% { transform: scale(1); }
-            45% { transform: scaleX(1.04) scaleY(0.96); }
-            100% { transform: scale(1); }
-        }
-
-        @keyframes button-bounce {
-            0% { transform: scale(0.65); }
-            70% { transform: scale(1.06); }
-            100% { transform: scale(1); }
-        }
-
-        @keyframes fade-in-up {
-            0% { opacity: 0; transform: translateY(10px) scale(0.98); }
-            100% { opacity: 1; transform: translateY(0) scale(1); }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#020813">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Sovereign Vault</title>
+<style>
+:root {
+    --bg-deep: radial-gradient(circle at 50% 0%, #0f1c35 0%, #020813 100%);
+    --glass-base: rgba(255, 255, 255, 0.04);
+    --glass-blur: blur(50px) saturate(220%);
+    --glass-border: 0.5px solid rgba(255, 255, 255, 0.18);
+    --glass-shine: inset 0 1.5px 1px rgba(255, 255, 255, 0.25), inset 0 -0.5px 1px rgba(0, 0, 0, 0.2);
+    --glass-shadow: 0 32px 64px rgba(0, 0, 0, 0.5), 0 8px 16px rgba(0, 0, 0, 0.3);
+    --ios-blue: #0A84FF;
+    --ios-blue-glow: 0 0 20px rgba(10, 132, 255, 0.5);
+    --ios-red: #FF453A;
+    --text-main: #FFFFFF;
+    --text-dim: rgba(255, 255, 255, 0.6);
+    --rad-pill: 999px;
+    --rad-card: 32px;
+    --rad-sm: 18px;
+    --spring: cubic-bezier(0.32, 0.72, 0, 1.25);
+    --spring-soft: cubic-bezier(0.32, 0.72, 0, 1);
+}
+* { box-sizing: border-box; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+body, html { background: #020813; color: var(--text-main); font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; margin: 0; padding: 0; height: 100vh; width: 100vw; overflow: hidden; position: fixed; overscroll-behavior: none; }
+body::before { content: ''; position: absolute; inset: 0; background: var(--bg-deep); z-index: -1; }
+
+@keyframes springIn { 0% { transform: scale(0.85); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes floatY { 0% { transform: translateY(0); } 50% { transform: translateY(-8px); } 100% { transform: translateY(0); } }
+
+.view-main { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1; transition: opacity 0.5s ease; }
+.stack { width: 100%; max-width: 360px; display: flex; flex-direction: column; align-items: center; position: relative; z-index: 5; padding: 0 24px; }
+.safe-zone { width: 160px; height: 160px; position: relative; margin-bottom: 40px; z-index: 10; display: flex; align-items: center; justify-content: center; }
+.safe-img { width: 100%; height: 100%; object-fit: contain; position: absolute; filter: drop-shadow(0 20px 40px rgba(0,0,0,0.6)); transition: transform 0.6s var(--spring), opacity 0.4s ease; }
+.safe-img:active { transform: scale(0.9); }
+.safe-img.hidden { opacity: 0; transform: scale(0.7); pointer-events: none; }
+
+.node { position: absolute; display: flex; flex-direction: column; align-items: center; opacity: 0; pointer-events: none; transition: all 0.7s var(--spring); z-index: 1; }
+.node img { width: 64px; height: auto; filter: drop-shadow(0 12px 24px rgba(0,0,0,0.5)); transition: transform 0.2s ease; animation: floatY 6s infinite ease-in-out; }
+.node:active img { transform: scale(0.85); }
+.node-lbl { background: var(--glass-base); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: var(--glass-border); box-shadow: var(--glass-shine); border-radius: var(--rad-pill); padding: 6px 14px; font-size: 13px; font-weight: 600; margin-top: 10px; letter-spacing: 0.3px; }
+.node:nth-child(1) img { animation-delay: 0s; }
+.node:nth-child(2) img { animation-delay: -2s; }
+.node:nth-child(3) img { animation-delay: -4s; }
+.view-main.open .node { opacity: 1; pointer-events: auto; z-index: 15; }
+.view-main.open .node.p1 { transform: translate(-110px, -60px); }
+.view-main.open .node.p2 { transform: translate(0, -120px); }
+.view-main.open .node.p3 { transform: translate(110px, -60px); }
+
+.txt-block { text-align: center; margin-bottom: 40px; }
+.hero-t { font-size: 36px; font-weight: 700; letter-spacing: -0.8px; margin: 0 0 10px; text-shadow: 0 4px 12px rgba(0,0,0,0.5); transition: all 0.5s ease; }
+.hero-s { font-size: 16px; color: var(--text-dim); line-height: 1.4; margin: 0; transition: opacity 0.3s ease; }
+.auth-bar { width: 100%; display: flex; align-items: center; gap: 12px; transition: all 0.5s var(--spring); }
+.inp-glass { flex: 1; height: 60px; background: var(--glass-base); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: var(--glass-border); box-shadow: var(--glass-shine), var(--glass-shadow); border-radius: var(--rad-pill); color: #fff; font-size: 20px; font-weight: 600; text-align: center; outline: none; -webkit-appearance: none; -webkit-user-select: text; user-select: text; transition: all 0.3s ease; }
+.inp-glass::placeholder { color: var(--text-dim); font-weight: 500; }
+.inp-glass:focus { background: rgba(255, 255, 255, 0.06); transform: scale(1.02); }
+.btn-go { width: 0; height: 60px; border-radius: var(--rad-pill); background: var(--ios-blue); display: flex; align-items: center; justify-content: center; opacity: 0; overflow: hidden; transition: all 0.6s var(--spring); }
+.auth-bar.ready .btn-go { width: 60px; opacity: 1; box-shadow: var(--ios-blue-glow); }
+.btn-go:active { transform: scale(0.85); }
+
+.grid-3 { width: 100%; display: none; grid-template-columns: repeat(3, 1fr); gap: 14px; animation: springIn 0.6s var(--spring) forwards; }
+.cell-m { background: var(--glass-base); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: var(--glass-border); box-shadow: var(--glass-shine), 0 10px 20px rgba(0,0,0,0.2); border-radius: var(--rad-card); padding: 20px 0; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.3s var(--spring); }
+.cell-m:active { transform: scale(0.92); background: rgba(255, 255, 255, 0.08); }
+.val-m { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+.lbl-m { font-size: 13px; color: var(--text-dim); font-weight: 600; }
+
+.drawer { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-deep); z-index: 100; display: flex; flex-direction: column; transform: translateY(100%); transition: transform 0.6s var(--spring-soft); }
+.drawer.on { transform: translateY(0); }
+.d-head { position: absolute; top: calc(15px + env(safe-area-inset-top, 0px)); left: 0; width: 100%; height: 50px; display: flex; justify-content: space-between; align-items: center; padding: 0 24px; z-index: 110; pointer-events: none; }
+.btn-drop { width: 50px; height: 50px; background: var(--glass-base); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: var(--glass-border); box-shadow: var(--glass-shine), var(--glass-shadow); border-radius: var(--rad-pill); display: flex; align-items: center; justify-content: center; pointer-events: auto; transition: transform 0.2s ease; }
+.btn-drop:active { transform: scale(0.85); background: rgba(255, 255, 255, 0.1); }
+.d-title { font-size: 22px; font-weight: 700; position: absolute; left: 50%; transform: translateX(-50%); pointer-events: auto; text-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+.d-body { flex: 1; margin-top: calc(85px + env(safe-area-inset-top, 0px)); margin-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); overflow-y: auto; padding: 0 24px; display: flex; flex-direction: column; gap: 16px; scroll-behavior: smooth; }
+
+.row-item { background: var(--glass-base); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: var(--glass-border); box-shadow: var(--glass-shine), 0 8px 16px rgba(0,0,0,0.2); border-radius: var(--rad-card); padding: 18px; display: flex; align-items: center; gap: 18px; transition: transform 0.2s ease; }
+.row-item:active { transform: scale(0.96); background: rgba(255, 255, 255, 0.06); }
+.icn-sq { width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; }
+.icn-sq img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); }
+.r-data { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.r-name { font-size: 18px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.r-sub { font-size: 14px; color: var(--text-dim); margin-top: 4px; }
+.fab { position: absolute; bottom: calc(15px + env(safe-area-inset-bottom, 0px)); left: 24px; right: 24px; height: 64px; background: var(--glass-base); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: var(--glass-border); box-shadow: var(--glass-shine), var(--glass-shadow); border-radius: var(--rad-pill); display: flex; align-items: center; justify-content: center; gap: 12px; z-index: 110; transition: transform 0.2s ease; }
+.fab:active { transform: scale(0.95); background: rgba(255, 255, 255, 0.08); }
+.fab span { font-size: 18px; font-weight: 600; color: #fff; letter-spacing: 0.3px; }
+
+.ovl { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); z-index: 500; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.4s ease; padding: 24px; }
+.ovl.on { opacity: 1; pointer-events: auto; }
+.mod { width: 100%; max-width: 320px; background: rgba(30,30,35,0.6); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: var(--glass-border); box-shadow: var(--glass-shine), var(--glass-shadow); border-radius: 40px; display: flex; flex-direction: column; transform: scale(1.1); transition: transform 0.5s var(--spring); overflow: hidden; padding: 28px 24px 24px; }
+.ovl.on .mod { transform: scale(1); }
+.m-txt { text-align: center; margin-bottom: 24px; }
+.m-t { font-size: 22px; font-weight: 700; margin: 0 0 8px; }
+.m-s { font-size: 16px; line-height: 1.4; color: var(--text-dim); margin: 0; }
+.m-fld { display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; }
+.i-fld { width: 100%; height: 50px; background: rgba(0,0,0,0.4); border: 0.5px solid rgba(255,255,255,0.1); box-shadow: inset 0 2px 4px rgba(0,0,0,0.5); border-radius: var(--rad-sm); padding: 0 18px; color: #fff; font-size: 17px; outline: none; -webkit-user-select: text; user-select: text; }
+.i-area { width: 100%; height: 140px; background: rgba(0,0,0,0.4); border: 0.5px solid rgba(255,255,255,0.1); box-shadow: inset 0 2px 4px rgba(0,0,0,0.5); border-radius: var(--rad-md); padding: 16px 18px; color: #fff; font-size: 17px; outline: none; resize: none; -webkit-user-select: text; user-select: text; }
+.m-act { display: flex; flex-direction: column; gap: 12px; }
+.b-act { height: 56px; border-radius: var(--rad-pill); display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 600; transition: transform 0.2s; }
+.b-act:active { transform: scale(0.95); }
+.b-act.pr { background: var(--ios-blue); color: #fff; box-shadow: var(--ios-blue-glow); }
+.b-act.sc { background: var(--glass-base); border: var(--glass-border); box-shadow: var(--glass-shine); color: #fff; }
+.b-act.rd { background: var(--glass-base); border: var(--glass-border); box-shadow: var(--glass-shine); color: var(--ios-red); }
+.m-act.r { flex-direction: row; }
+.m-act.r .b-act { flex: 1; }
+
+.sheet { position: fixed; inset: 0; top: 60px; background: rgba(15,20,30,0.85); backdrop-filter: blur(60px) saturate(200%); -webkit-backdrop-filter: blur(60px) saturate(200%); border-radius: 44px 44px 0 0; border-top: var(--glass-border); box-shadow: var(--glass-shine), 0 -20px 60px rgba(0,0,0,0.7); z-index: 300; transform: translateY(100%); transition: transform 0.6s var(--spring-soft); display: flex; flex-direction: column; }
+.sheet.on { transform: translateY(0); }
+.sh-top { height: 70px; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; border-bottom: 0.5px solid rgba(255,255,255,0.08); }
+.sh-bdy { flex: 1; padding: 32px 28px; overflow-y: auto; font-size: 19px; line-height: 1.6; color: rgba(255,255,255,0.95); white-space: pre-wrap; -webkit-user-select: text; user-select: text; }
+.sh-cls { background: rgba(255,255,255,0.1); border-radius: var(--rad-pill); padding: 8px 20px; font-weight: 600; font-size: 16px; }
+
+.gal { position: fixed; inset: 0; background: #000; z-index: 400; opacity: 0; pointer-events: none; transition: opacity 0.5s ease; display: flex; flex-direction: column; }
+.gal.on { opacity: 1; pointer-events: auto; }
+.g-ctrl { position: absolute; top: calc(20px + env(safe-area-inset-top, 0px)); right: 24px; z-index: 410; }
+.g-wrap { flex: 1; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.g-wrap::-webkit-scrollbar { display: none; }
+.g-item { width: 100vw; height: 100%; flex-shrink: 0; scroll-snap-align: center; display: flex; align-items: center; justify-content: center; position: relative; }
+.g-item img { max-width: 100%; max-height: 100%; object-fit: contain; transform: scale(1); transition: transform 0.3s ease; }
+</style>
 </head>
 <body>
 
-    <div class="app-viewport" id="viewport" onclick="closeFolders(event)">
-        <div class="center-wrapper" onclick="event.stopPropagation()">
-            
-            <!-- Safe container & interactive folder structure overlay -->
-            <div class="safe-area-container">
-                <div class="folder-item f-left" onclick="openTab('Тексты')">
-                    <img src="folder.png" alt="Folder" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%23FF9500\'><path d=\'M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z\'/></svg>'">
-                    <div class="folder-badge">Тексты</div>
-                </div>
-                <div class="folder-item f-center" onclick="openTab('Фото')">
-                    <img src="folder.png" alt="Folder" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%23007AFF\'><path d=\'M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z\'/></svg>'">
-                    <div class="folder-badge">Фото</div>
-                </div>
-                <div class="folder-item f-right" onclick="openTab('Прочее')">
-                    <img src="folder.png" alt="Folder" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%2334C759\'><path d=\'M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z\'/></svg>'">
-                    <div class="folder-badge">Прочее</div>
-                </div>
-
-                <!-- Custom physical image targets with auto fallback -->
-                <img src="safe.png" alt="Safe Closed" class="safe-image" id="safeClosed" onclick="handleSafeClick()" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%238E8E93\'><rect x=\'3\' y=\'11\' width=\'18\' height=\'11\' rx=\'2\' ry=\'2\'/><path d=\'M7 11V7a5 5 0 0 1 10 0v4\' stroke=\'%238E8E93\' stroke-width=\'2\' fill=\'none\'/></svg>'">
-                <img src="safe2.png" alt="Safe Opened" class="safe-image hidden" id="safeOpened" onclick="handleSafeClick()" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%2334C759\'><rect x=\'3\' y=\'11\' width=\'18\' height=\'11\' rx=\'2\' ry=\'2\'/><path d=\'M7 11V7a5 5 0 0 1 10 0v4\' stroke=\'%2334C759\' stroke-width=\'2\' fill=\'none\'/></svg>'">
+<div class="view-main" id="vm" onclick="cMf()">
+    <div class="stack" onclick="event.stopPropagation()">
+        
+        <div class="safe-zone">
+            <div class="node p1" onclick="oTb('Тексты')">
+                <img src="folder.png" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%23FF9500\'><path d=\'M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z\'/></svg>'">
+                <div class="node-lbl">Тексты</div>
             </div>
-            
-            <div class="title-frame">
-                <h1 class="title" id="mainTitle">Добро пожаловать!</h1>
+            <div class="node p2" onclick="oTb('Фото')">
+                <img src="folder.png" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%230A84FF\'><path d=\'M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z\'/></svg>'">
+                <div class="node-lbl">Фото</div>
             </div>
-            
-            <p class="description" id="mainDesc">Придумай надежный пароль, который содержит минимум 8 символов, заглавную букву и цифру</p>
-            
-            <!-- Standard dynamic lock access keys -->
-            <div class="controls-row" id="controlsRow">
-                <div class="input-container">
-                    <input type="password" class="ios-input" id="passInput" placeholder="ABC123" autocomplete="off" oninput="validatePassword(this)">
-                </div>
-                <div class="login-btn" id="loginBtn" onclick="triggerSystemAlert()">
-                    <img src="login.png" alt="Login" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2334C759\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><polyline points=\'9 18 15 12 9 6\'/></svg>'">
-                </div>
+            <div class="node p3" onclick="oTb('Прочее')">
+                <img src="folder.png" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%2334C759\'><path d=\'M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z\'/></svg>'">
+                <div class="node-lbl">Прочее</div>
             </div>
 
-            <!-- Workspace split segments for structural directory counters -->
-            <div class="counters-grid" id="countersGrid">
-                <div class="counter-pill" onclick="openTab('Тексты')">
-                    <div class="counter-val" id="countTexts">0</div>
-                    <div class="counter-label">Текстов</div>
-                </div>
-                <div class="counter-pill" onclick="openTab('Фото')">
-                    <div class="counter-val" id="countPhotos">0</div>
-                    <div class="counter-label">Фото</div>
-                </div>
-                <div class="counter-pill" onclick="openTab('Прочее')">
-                    <div class="counter-val" id="countOther">0</div>
-                    <div class="counter-label">Прочего</div>
-                </div>
-            </div>
+            <img src="safe.png" class="safe-img" id="sfC" onclick="tSf()" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%238E8E93\'><rect x=\'3\' y=\'11\' width=\'18\' height=\'11\' rx=\'4\'/><path d=\'M7 11V7a5 5 0 0 1 10 0v4\' stroke=\'%238E8E93\' stroke-width=\'2\' fill=\'none\'/></svg>'">
+            <img src="safe2.png" class="safe-img hidden" id="sfO" onclick="tSf()" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%2334C759\'><rect x=\'3\' y=\'11\' width=\'18\' height=\'11\' rx=\'4\'/><path d=\'M7 11V7a5 5 0 0 1 10 0v4\' stroke=\'%2334C759\' stroke-width=\'2\' fill=\'none\'/></svg>'">
+        </div>
 
+        <div class="txt-block">
+            <h1 class="hero-t" id="hT">Добро пожаловать</h1>
+            <p class="hero-s" id="hS">Установите мастер-ключ (мин. 8 символов, цифра, заглавная)</p>
+        </div>
+
+        <div class="auth-bar" id="aB">
+            <input type="password" class="inp-glass" id="kI" placeholder="Ключ доступа" oninput="vK()">
+            <div class="btn-go" onclick="aE()">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+        </div>
+
+        <div class="grid-3" id="mG">
+            <div class="cell-m" onclick="oTb('Тексты')">
+                <span class="val-m" id="vT">0</span>
+                <span class="lbl-m">Тексты</span>
+            </div>
+            <div class="cell-m" onclick="oTb('Фото')">
+                <span class="val-m" id="vP">0</span>
+                <span class="lbl-m">Фото</span>
+            </div>
+            <div class="cell-m" onclick="oTb('Прочее')">
+                <span class="val-m" id="vO">0</span>
+                <span class="lbl-m">Прочее</span>
+            </div>
         </div>
     </div>
+</div>
 
-    <div class="folder-tab" id="folderTab">
-        <div class="tab-header">
-            <div class="back-drop-btn" onclick="closeActiveTab()">
-                <img src="back.png" alt="Back" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'2.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><polyline points=\'15 18 9 12 15 6\'/></svg>'">
-            </div>
-            <div class="tab-title" id="tabTitle">Раздел</div>
-            <div class="plus-drop-btn" id="plusFolderBtn" style="display: none;" onclick="promptAddFolder()">
-                <img src="add.png" alt="Add Folder" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'2.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><line x1=\'12\' y1=\'5\' x2=\'12\' y2=\'19\'/><line x1=\'5\' y1=\'12\' x2=\'19\' y2=\'12\'/></svg>'">
-            </div>
+<div class="drawer" id="drw">
+    <div class="d-head">
+        <div class="btn-drop" onclick="cTb()">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
         </div>
-
-        <div class="tab-content" id="tabContent"></div>
-
-        <div class="add-glass-btn" onclick="triggerAddAction()">
-            <img src="add.png" alt="Add" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'2.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><line x1=\'12\' y1=\'5\' x2=\'12\' y2=\'19\'/><line x1=\'5\' y1=\'12\' x2=\'19\' y2=\'12\'/></svg>'">
-            <span>Добавить</span>
+        <div class="d-title" id="dT"></div>
+        <div class="btn-drop" id="fB" style="display:none;" onclick="nFd()">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </div>
     </div>
-
-    <div class="custom-overlay" id="customOverlay">
-        <div class="ios-alert-box" id="alertBox">
-            <div class="alert-body" id="alertBody">
-                <h3 class="alert-title" id="alertTitle">Заголовок</h3>
-                <p class="alert-desc" id="alertDesc">Описание сообщения</p>
-                <div id="alertInputsContainer"></div>
-            </div>
-            <div class="alert-buttons" id="alertButtons"></div>
-        </div>
+    <div class="d-body" id="dB"></div>
+    <div class="fab" onclick="aOb()">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span>Добавить</span>
     </div>
+</div>
 
-    <!-- IMMERSIVE IMMERSION FULLSCREEN LIGHTBOX WITH PINCH/ZOOM -->
-    <div class="immersive-lightbox" id="immersiveLightbox" onclick="closeLightbox()">
-        <div class="lightbox-close" onclick="closeLightbox(event)">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
+<div class="ovl" id="oM">
+    <div class="mod">
+        <div class="m-txt">
+            <h3 class="m-t" id="mtT"></h3>
+            <p class="m-s" id="mtS"></p>
         </div>
-        <div class="lightbox-content" onclick="event.stopPropagation()">
-            <img class="lightbox-image" id="lightboxImage" src="" alt="View">
-        </div>
+        <div class="m-fld" id="mF"></div>
+        <div class="m-act" id="mA"></div>
     </div>
-
-    <input type="file" id="secureFilePicker" style="display: none;" onchange="handleFileSelected(this)">
-
-    <script>
-        let isWorkspaceUnlocked = false;
-        let activeTabName = '';
-        let currentFolderId = 'root';
-        let folderHistoryStack = [];
-        let isAppInitialized = false;
-
-        let derivedSessionKey = null; 
-        let cachedSaltHex = '';
-
-        const dbConfig = { name: "SovereignVault_V1", version: 1 };
-        let localDB = null;
-
-        function initIndexedDB() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(dbConfig.name, dbConfig.version);
-                request.onupgradeneeded = (event) => {
-                    const db = event.target.result;
-                    if (!db.objectStoreNames.contains("vault_meta")) {
-                        db.createObjectStore("vault_meta");
-                    }
-                    if (!db.objectStoreNames.contains("vault_payloads")) {
-                        db.createObjectStore("vault_payloads", { keyPath: "id", autoIncrement: true });
-                    }
-                };
-                request.onsuccess = (event) => {
-                    localDB = event.target.result;
-                    resolve(localDB);
-                };
-                request.onerror = (event) => {
-                    reject(event.target.error);
-                };
-            });
-        }
-
-        function getMetadata(key) {
-            return new Promise((resolve) => {
-                const tx = localDB.transaction("vault_meta", "readonly");
-                const store = tx.objectStore("vault_meta");
-                const req = store.get(key);
-                req.onsuccess = () => resolve(req.result);
-                req.onerror = () => resolve(null);
-            });
-        }
-
-        function setMetadata(key, value) {
-            return new Promise((resolve) => {
-                const tx = localDB.transaction("vault_meta", "readwrite");
-                const store = tx.objectStore("vault_meta");
-                const req = store.put(value, key);
-                req.onsuccess = () => resolve(true);
-                req.onerror = () => resolve(false);
-            });
-        }
-
-        function saveVaultItem(item) {
-            return new Promise((resolve, reject) => {
-                const tx = localDB.transaction("vault_payloads", "readwrite");
-                const store = tx.objectStore("vault_payloads");
-                const req = store.add(item);
-                req.onsuccess = () => resolve(req.result);
-                req.onerror = () => reject(req.error);
-            });
-        }
-
-        function deleteVaultItem(id) {
-            return new Promise((resolve) => {
-                const tx = localDB.transaction("vault_payloads", "readwrite");
-                const store = tx.objectStore("vault_payloads");
-                const req = store.delete(id);
-                req.onsuccess = () => resolve(true);
-                req.onerror = () => resolve(false);
-            });
-        }
-
-        function getVaultItemsByParent(parentId) {
-            return new Promise((resolve) => {
-                const tx = localDB.transaction("vault_payloads", "readonly");
-                const store = tx.objectStore("vault_payloads");
-                const req = store.getAll();
-                req.onsuccess = () => {
-                    const all = req.result || [];
-                    const filtered = all.filter(item => item.parentId === parentId);
-                    resolve(filtered);
-                };
-                req.onerror = () => resolve([]);
-            });
-        }
-
-        function getVaultItemsCount(tabType) {
-            return new Promise((resolve) => {
-                const tx = localDB.transaction("vault_payloads", "readonly");
-                const store = tx.objectStore("vault_payloads");
-                const req = store.getAll();
-                req.onsuccess = () => {
-                    const all = req.result || [];
-                    const filtered = all.filter(item => item.tabType === tabType);
-                    resolve(filtered.length);
-                };
-                req.onerror = () => resolve(0);
-            });
-        }
-
-        function showCustomModal(options) {
-            const overlay = document.getElementById('customOverlay');
-            const titleEl = document.getElementById('alertTitle');
-            const descEl = document.getElementById('alertDesc');
-            const inputContainer = document.getElementById('alertInputsContainer');
-            const buttonsContainer = document.getElementById('alertButtons');
-
-            titleEl.innerText = options.title || '';
-            descEl.innerText = options.description || '';
-            inputContainer.innerHTML = '';
-            buttonsContainer.innerHTML = '';
-
-            let inputs = {};
-            if (options.inputs) {
-                options.inputs.forEach(inp => {
-                    let element;
-                    if (inp.type === 'textarea') {
-                        element = document.createElement('textarea');
-                        element.className = 'alert-textarea';
-                    } else {
-                        element = document.createElement('input');
-                        element.type = inp.type || 'text';
-                        element.className = 'alert-input';
-                    }
-                    element.placeholder = inp.placeholder || '';
-                    element.id = 'customInp_' + inp.id;
-                    inputContainer.appendChild(element);
-                    inputs[inp.id] = element;
-                });
-            }
-
-            if (options.buttons) {
-                options.buttons.forEach((btn, index) => {
-                    const btnEl = document.createElement('div');
-                    btnEl.className = 'alert-btn' + (btn.bold ? ' bold' : '') + (btn.cancel ? ' cancel' : '');
-                    btnEl.innerText = btn.text;
-                    btnEl.onclick = () => {
-                        let values = {};
-                        for (let k in inputs) {
-                            values[k] = inputs[k].value;
-                        }
-                        overlay.classList.remove('active');
-                        if (btn.handler) btn.handler(values);
-                    };
-                    buttonsContainer.appendChild(btnEl);
-                });
-            } else {
-                const okBtn = document.createElement('div');
-                okBtn.className = 'alert-btn bold';
-                okBtn.innerText = 'OK';
-                okBtn.onclick = () => overlay.classList.remove('active');
-                buttonsContainer.appendChild(okBtn);
-            }
-
-            overlay.classList.add('active');
-        }
-
-        async function deriveKeyFromPassword(password, saltHex) {
-            const enc = new TextEncoder();
-            const passwordBuffer = enc.encode(password);
-            
-            let salt;
-            if (saltHex) {
-                salt = new Uint8Array(saltHex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
-            } else {
-                salt = window.crypto.getRandomValues(new Uint8Array(16));
-            }
-
-            const baseKey = await window.crypto.subtle.importKey(
-                "raw", passwordBuffer, { name: "PBKDF2" }, false, ["deriveKey"]
-            );
-
-            const key = await window.crypto.subtle.deriveKey(
-                { name: "PBKDF2", salt: salt, iterations: 100000, hash: "SHA-256" },
-                baseKey,
-                { name: "AES-GCM", length: 256 },
-                false,
-                ["encrypt", "decrypt"]
-            );
-
-            const computedSaltHex = Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join('');
-            return { key, saltHex: computedSaltHex };
-        }
-
-        async function encryptData(arrayBuffer, cryptoKey) {
-            const iv = window.crypto.getRandomValues(new Uint8Array(12));
-            const encrypted = await window.crypto.subtle.encrypt(
-                { name: "AES-GCM", iv: iv },
-                cryptoKey,
-                arrayBuffer
-            );
-            return {
-                iv: Array.from(iv),
-                payload: encrypted
-            };
-        }
-
-        async function decryptData(encryptedBuffer, ivArray, cryptoKey) {
-            const iv = new Uint8Array(ivArray);
-            const decrypted = await window.crypto.subtle.decrypt(
-                { name: "AES-GCM", iv: iv },
-                cryptoKey,
-                encryptedBuffer
-            );
-            return decrypted;
-        }
-
-        function validatePassword(input) {
-            const val = input.value;
-            const hasMinLength = val.length >= 8;
-            const hasUpper = /[A-Z]/.test(val) || /[а-яА-Я]/.test(val) ? /[A-ZА-Я]/.test(val) : /[A-Z]/.test(val);
-            const hasNumber = /[0-9]/.test(val);
-            
-            const row = document.getElementById('controlsRow');
-            if (hasMinLength && hasUpper && hasNumber) {
-                row.classList.add('valid');
-            } else {
-                row.classList.remove('valid');
-            }
-        }
-
-        function triggerSystemAlert() {
-            const passwordVal = document.getElementById('passInput').value;
-            if (!passwordVal) return;
-
-            if (!isAppInitialized) {
-                showCustomModal({
-                    title: "Соглашение",
-                    description: "Продолжая, вы принимаете наши условия использования. Все ваши данные шифруются на лету и хранятся исключительно на этом устройстве.",
-                    buttons: [
-                        { text: "Отмена", cancel: true, handler: () => {} },
-                        { text: "Продолжить", bold: true, handler: () => executeInitialization(passwordVal) }
-                    ]
-                });
-            } else {
-                executeLogin(passwordVal);
-            }
-        }
-
-        async function executeInitialization(password) {
-            try {
-                const { key, saltHex } = await deriveKeyFromPassword(password);
-                const verificationData = new TextEncoder().encode("verification_token_v1");
-                const encryptedVerification = await encryptData(verificationData, key);
-
-                await setMetadata("vault_salt", saltHex);
-                await setMetadata("vault_verification", encryptedVerification);
-
-                derivedSessionKey = key;
-                cachedSaltHex = saltHex;
-
-                executeTransition();
-            } catch (err) {
-                showCustomModal({ title: "Ошибка", description: "Не удалось инициализировать сейф: " + err.message });
-            }
-        }
-
-        async function executeLogin(password) {
-            try {
-                const storedSalt = await getMetadata("vault_salt");
-                const storedVerification = await getMetadata("vault_verification");
-
-                if (!storedSalt || !storedVerification) {
-                    showCustomModal({ title: "Сбой", description: "Сейф не инициализирован. Перезапустите приложение." });
-                    return;
-                }
-
-                const { key } = await deriveKeyFromPassword(password, storedSalt);
-
-                try {
-                    const decrypted = await decryptData(storedVerification.payload, storedVerification.iv, key);
-                    const decoded = new TextDecoder().decode(decrypted);
-                    if (decoded !== "verification_token_v1") {
-                        throw new Error("Invalid decryption result");
-                    }
-                } catch (e) {
-                    showCustomModal({ title: "Доступ закрыт", description: "Введен неверный пароль. Сейф заблокирован." });
-                    return;
-                }
-
-                derivedSessionKey = key;
-                cachedSaltHex = storedSalt;
-
-                executeTransition();
-            } catch (err) {
-                showCustomModal({ title: "Ошибка", description: "Не удалось проверить ключ: " + err.message });
-            }
-        }
-
-        function executeTransition() {
-            const title = document.getElementById('mainTitle');
-            const desc = document.getElementById('mainDesc');
-            const controls = document.getElementById('controlsRow');
-            const counters = document.getElementById('countersGrid');
-            const frame = title.parentElement;
-
-            title.style.transform = 'translateY(100%)';
-            title.style.opacity = '0';
-            desc.style.opacity = '0';
-
-            controls.style.opacity = '0';
-            controls.style.transform = 'scale(0.95)';
-            controls.style.pointerEvents = 'none';
-
-            setTimeout(async () => {
-                const newTitle = document.createElement('h1');
-                newTitle.className = 'title incoming';
-                newTitle.id = 'mainTitle';
-                newTitle.innerText = 'Воркспейс';
-                frame.appendChild(newTitle);
-
-                setTimeout(() => {
-                    newTitle.style.transform = 'translateY(0)';
-                    newTitle.style.opacity = '1';
-                }, 50);
-
-                desc.innerText = 'Храните здесь тексты, фотографии и видео анонимно';
-                desc.style.opacity = '1';
-
-                controls.remove();
-                counters.style.display = 'grid';
-                isWorkspaceUnlocked = true;
-
-                await updateCounters();
-
-            }, 300);
-        }
-
-        async function updateCounters() {
-            if (!localDB) return;
-            const textCount = await getVaultItemsCount('Тексты');
-            const photoCount = await getVaultItemsCount('Фото');
-            const otherCount = await getVaultItemsCount('Прочее');
-
-            document.getElementById('countTexts').innerText = textCount;
-            document.getElementById('countPhotos').innerText = photoCount;
-            document.getElementById('countOther').innerText = otherCount;
-        }
-
-        function handleSafeClick() {
-            if (!isWorkspaceUnlocked) return;
-
-            const viewport = document.getElementById('viewport');
-            const closedSafe = document.getElementById('safeClosed');
-            const openedSafe = document.getElementById('safeOpened');
-
-            if (!viewport.classList.contains('opened')) {
-                closedSafe.classList.add('hidden');
-                openedSafe.classList.remove('hidden');
-                viewport.classList.add('opened');
-            } else {
-                viewport.classList.remove('opened');
-                openedSafe.classList.add('hidden');
-                closedSafe.classList.remove('hidden');
-            }
-        }
-
-        function closeFolders(event) {
-            const viewport = document.getElementById('viewport');
-            if (viewport.classList.contains('opened')) {
-                viewport.classList.remove('opened');
-                document.getElementById('safeOpened').classList.add('hidden');
-                document.getElementById('safeClosed').classList.remove('hidden');
-            }
-        }
-
-        async function openTab(type) {
-            activeTabName = type;
-            currentFolderId = 'root';
-            folderHistoryStack = [];
-            
-            document.getElementById('tabTitle').innerText = type;
-            
-            const plusBtn = document.getElementById('plusFolderBtn');
-            if (type === 'Прочее') {
-                plusBtn.style.display = 'flex';
-            } else {
-                plusBtn.style.display = 'none';
-            }
-
-            const tab = document.getElementById('folderTab');
-            tab.classList.add('active');
-
-            await renderTabContent();
-        }
-
-        function closeActiveTab() {
-            if (folderHistoryStack.length > 0) {
-                currentFolderId = folderHistoryStack.pop();
-                renderTabContent();
-            } else {
-                const tab = document.getElementById('folderTab');
-                tab.classList.remove('active');
-                updateCounters();
-            }
-        }
-
-        async function renderTabContent() {
-            const container = document.getElementById('tabContent');
-            container.innerHTML = '';
-
-            const items = await getVaultItemsByParent(currentFolderId);
-            const filtered = items.filter(item => item.tabType === activeTabName);
-
-            if (filtered.length === 0) {
-                const empty = document.createElement('div');
-                empty.style.textAlign = 'center';
-                empty.style.color = 'var(--ios-hint)';
-                empty.style.marginTop = '40px';
-                empty.innerText = 'Здесь пока ничего нет';
-                container.appendChild(empty);
-                return;
-            }
-
-            for (const item of filtered) {
-                const row = document.createElement('div');
-                row.className = 'vault-item-row';
-
-                let iconSrc = 'folder.png';
-                let typeText = 'Элемент';
-                if (item.type === 'text') {
-                    iconSrc = 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%23FF9500\'><path d=\'M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z\'/></svg>';
-                    typeText = 'Текст';
-                } else if (item.type === 'file') {
-                    iconSrc = 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%23007AFF\'><path d=\'M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.48-2.02-4.5-4.5-4.5S6 2.52 6 5v12.5c0 3.59 2.91 6.5 6.5 6.5s6.5-2.91 6.5-6.5V6h-1.5z\'/></svg>';
-                    typeText = item.mimeType ? item.mimeType.split('/')[1].toUpperCase() : 'Файл';
-                } else if (item.type === 'folder') {
-                    iconSrc = 'folder.png';
-                    typeText = 'Папка';
-                }
-
-                const icon = document.createElement('img');
-                icon.className = 'vault-item-icon';
-                icon.src = iconSrc;
-                if (item.type === 'folder') {
-                    icon.onerror = () => { icon.src = 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%2334C759\'><path d=\'M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z\'/></svg>'; };
-                }
-                row.appendChild(icon);
-
-                const details = document.createElement('div');
-                details.className = 'vault-item-details';
-
-                let decName = '[Зашифровано]';
-                try {
-                    const decryptedNameBuf = await decryptData(item.encryptedName, item.nameIv, derivedSessionKey);
-                    decName = new TextDecoder().decode(decryptedNameBuf);
-                } catch (e) {
-                    console.error("Name decryption failure", e);
-                }
-
-                const nameEl = document.createElement('div');
-                nameEl.className = 'vault-item-title';
-                nameEl.innerText = decName;
-                details.appendChild(nameEl);
-
-                const metaEl = document.createElement('div');
-                metaEl.className = 'vault-item-meta';
-                metaEl.innerText = typeText;
-                details.appendChild(metaEl);
-
-                row.appendChild(details);
-
-                row.onclick = () => handleItemClick(item, decName);
-                container.appendChild(row);
-            }
-        }
-
-        async function handleItemClick(item, name) {
-            if (item.type === 'folder') {
-                folderHistoryStack.push(currentFolderId);
-                currentFolderId = item.folderUUID;
-                renderTabContent();
-            } else if (item.type === 'text') {
-                try {
-                    const decryptedBuf = await decryptData(item.payload, item.iv, derivedSessionKey);
-                    const decText = new TextDecoder().decode(decryptedBuf);
-                    showCustomModal({
-                        title: name,
-                        description: decText,
-                        buttons: [
-                            { text: "Удалить", cancel: true, handler: () => confirmDelete(item.id) },
-                            { text: "Закрыть", bold: true, handler: () => {} }
-                        ]
-                    });
-                } catch (e) {
-                    showCustomModal({ title: "Ошибка", description: "Не удалось дешифровать текст." });
-                }
-            } else if (item.type === 'file') {
-                try {
-                    const decryptedBuf = await decryptData(item.payload, item.iv, derivedSessionKey);
-                    const blob = new Blob([decryptedBuf], { type: item.mimeType });
-                    const blobUrl = URL.createObjectURL(blob);
-
-                    if (item.mimeType.startsWith('image/')) {
-                        /* IMMERSIVE IMAGE LIGHTBOX VIEW (NO DUPLICATION IN MODAL) */
-                        openLightbox(blobUrl);
-                    } else {
-                        showCustomModal({
-                            title: name,
-                            description: `Файл формата ${item.mimeType}. Расшифровка завершена успешно.`,
-                            buttons: [
-                                { text: "Удалить", cancel: true, handler: () => confirmDelete(item.id) },
-                                { text: "Скачать", bold: true, handler: () => triggerBlobDownload(blobUrl, name) },
-                                { text: "Закрыть", bold: true, handler: () => {} }
-                            ]
-                        });
-                    }
-                } catch (e) {
-                    showCustomModal({ title: "Ошибка", description: "Не удалось расшифровать файл: " + e.message });
-                }
-            }
-        }
-
-        let zoomScale = 1;
-        let zoomMax = 5;
-        let zoomMin = 1;
-        let startTouchDistance = 0;
-        let isDraggingLightbox = false;
-        let startTouchX = 0, startTouchY = 0;
-        let imgPosX = 0, imgPosY = 0;
-        let activeTouchesCount = 0;
-
-        function openLightbox(url) {
-            const lightbox = document.getElementById('immersiveLightbox');
-            const img = document.getElementById('lightboxImage');
-            img.src = url;
-            lightbox.classList.add('active');
-            
-            // Reset transforms on enter
-            zoomScale = 1;
-            imgPosX = 0;
-            imgPosY = 0;
-            updateLightboxTransform();
-            setupLightboxGestures();
-        }
-
-        function closeLightbox(event) {
-            if (event) event.stopPropagation();
-            const lightbox = document.getElementById('immersiveLightbox');
-            lightbox.classList.remove('active');
-            setTimeout(() => {
-                document.getElementById('lightboxImage').src = '';
-            }, 300);
-        }
-
-        function updateLightboxTransform() {
-            const img = document.getElementById('lightboxImage');
-            img.style.transform = `translate(${imgPosX}px, ${imgPosY}px) scale(${zoomScale})`;
-            img.style.transition = 'none'; // Instant response on active move
-        }
-
-        function setupLightboxGestures() {
-            const container = document.querySelector('.lightbox-content');
-            const img = document.getElementById('lightboxImage');
-
-            // Wheel scaling (Desktop)
-            container.onwheel = (e) => {
-                e.preventDefault();
-                const delta = e.deltaY > 0 ? -0.15 : 0.15;
-                zoomScale = Math.min(Math.max(zoomScale + delta, zoomMin), zoomMax);
-                if (zoomScale === 1) {
-                    imgPosX = 0;
-                    imgPosY = 0;
-                }
-                updateLightboxTransform();
-            };
-
-            // Touch events (Mobile)
-            container.ontouchstart = (e) => {
-                activeTouchesCount = e.touches.length;
-                if (activeTouchesCount === 1) {
-                    isDraggingLightbox = true;
-                    startTouchX = e.touches[0].clientX - imgPosX;
-                    startTouchY = e.touches[0].clientY - imgPosY;
-                } else if (activeTouchesCount === 2) {
-                    isDraggingLightbox = false;
-                    const dx = e.touches[0].clientX - e.touches[1].clientX;
-                    const dy = e.touches[0].clientY - e.touches[1].clientY;
-                    startTouchDistance = Math.sqrt(dx * dx + dy * dy);
-                }
-            };
-
-            container.ontouchmove = (e) => {
-                if (activeTouchesCount === 1 && isDraggingLightbox) {
-                    imgPosX = e.touches[0].clientX - startTouchX;
-                    imgPosY = e.touches[0].clientY - startTouchY;
-                    updateLightboxTransform();
-                } else if (activeTouchesCount === 2) {
-                    const dx = e.touches[0].clientX - e.touches[1].clientX;
-                    const dy = e.touches[0].clientY - e.touches[1].clientY;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    if (startTouchDistance > 0) {
-                        const factor = distance / startTouchDistance;
-                        zoomScale = Math.min(Math.max(zoomScale * factor, zoomMin), zoomMax);
-                        startTouchDistance = distance;
-                        updateLightboxTransform();
-                    }
-                }
-            };
-
-            container.ontouchend = (e) => {
-                activeTouchesCount = e.touches.length;
-                if (activeTouchesCount === 0) {
-                    isDraggingLightbox = false;
-                    if (zoomScale <= 1.05) {
-                        // Smoothly spring-snap back to center
-                        img.style.transition = 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
-                        zoomScale = 1;
-                        imgPosX = 0;
-                        imgPosY = 0;
-                        img.style.transform = `translate(0px, 0px) scale(1)`;
-                    }
-                }
-            };
-        }
-
-        function triggerBlobDownload(url, filename) {
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
-
-        function confirmDelete(id) {
-            showCustomModal({
-                title: "Удаление",
-                description: "Вы уверены, что хотите удалить этот элемент из сейфа?",
-                buttons: [
-                    { text: "Отмена", cancel: true, handler: () => {} },
-                    { text: "Удалить", bold: true, handler: async () => {
-                        await deleteVaultItem(id);
-                        renderTabContent();
-                    }}
-                ]
-            });
-        }
-
-        function promptAddFolder() {
-            showCustomModal({
-                title: "Новая папка",
-                description: "Укажите имя для создаваемой папки внутри текущего раздела:",
-                inputs: [
-                    { id: 'folderName', type: 'text', placeholder: 'Название папки' }
-                ],
-                buttons: [
-                    { text: "Отмена", cancel: true, handler: () => {} },
-                    { text: "Создать", bold: true, handler: (vals) => executeAddFolder(vals.folderName) }
-                ]
-            });
-        }
-
-        async function executeAddFolder(name) {
-            if (!name) return;
-            try {
-                const uuid = crypto.randomUUID();
-                const encNameData = new TextEncoder().encode(name);
-                const encryptedName = await encryptData(encNameData, derivedSessionKey);
-
-                const item = {
-                    tabType: activeTabName,
-                    type: 'folder',
-                    parentId: currentFolderId,
-                    folderUUID: uuid,
-                    encryptedName: encryptedName.payload,
-                    nameIv: encryptedName.iv
-                };
-
-                await saveVaultItem(item);
-                renderTabContent();
-            } catch (err) {
-                showCustomModal({ title: "Ошибка", description: "Не удалось создать папку: " + err.message });
-            }
-        }
-
-        function triggerAddAction() {
-            if (activeTabName === 'Тексты') {
-                showCustomModal({
-                    title: "Добавить текст",
-                    description: "Данные будут защищены вашим мастер-ключом:",
-                    inputs: [
-                        { id: 'title', type: 'text', placeholder: 'Заголовок записи' },
-                        { id: 'content', type: 'textarea', placeholder: 'Текст заметки' }
-                    ],
-                    buttons: [
-                        { text: "Отмена", cancel: true, handler: () => {} },
-                        { text: "Зашифровать", bold: true, handler: (vals) => encryptAndSaveText(vals.title, vals.content) }
-                    ]
-                });
-            } else if (activeTabName === 'Фото') {
-                const picker = document.getElementById('secureFilePicker');
-                picker.accept = "image/*";
-                picker.click();
-            } else if (activeTabName === 'Прочее') {
-                const picker = document.getElementById('secureFilePicker');
-                picker.accept = "*/*";
-                picker.click();
-            }
-        }
-
-        async function encryptAndSaveText(title, content) {
-            if (!title || !content) return;
-            try {
-                const encNameData = new TextEncoder().encode(title);
-                const encryptedName = await encryptData(encNameData, derivedSessionKey);
-
-                const encContentData = new TextEncoder().encode(content);
-                const encryptedContent = await encryptData(encContentData, derivedSessionKey);
-
-                const item = {
-                    tabType: activeTabName,
-                    type: 'text',
-                    parentId: currentFolderId,
-                    encryptedName: encryptedName.payload,
-                    nameIv: encryptedName.iv,
-                    payload: encryptedContent.payload,
-                    iv: encryptedContent.iv
-                };
-
-                await saveVaultItem(item);
-                renderTabContent();
-            } catch (err) {
-                showCustomModal({ title: "Ошибка", description: "Не удалось зашифровать текст: " + err.message });
-            }
-        }
-
-        function handleFileSelected(input) {
-            const file = input.files[0];
-            if (!file) return;
-
-            showCustomModal({
-                title: "Добавление файла",
-                description: `Зашифровать и загрузить файл "${file.name}"?`,
-                buttons: [
-                    { text: "Отмена", cancel: true, handler: () => { input.value = ''; } },
-                    { text: "Загрузить", bold: true, handler: () => executeFileImport(file, input) }
-                ]
-            });
-        }
-
-        async function executeFileImport(file, input) {
-            try {
-                const arrayBuffer = await file.arrayBuffer();
-                
-                const encNameData = new TextEncoder().encode(file.name);
-                const encryptedName = await encryptData(encNameData, derivedSessionKey);
-
-                const encryptedPayload = await encryptData(arrayBuffer, derivedSessionKey);
-
-                const item = {
-                    tabType: activeTabName,
-                    type: 'file',
-                    parentId: currentFolderId,
-                    mimeType: file.type || 'application/octet-stream',
-                    encryptedName: encryptedName.payload,
-                    nameIv: encryptedName.iv,
-                    payload: encryptedPayload.payload,
-                    iv: encryptedPayload.iv
-                };
-
-                await saveVaultItem(item);
-                input.value = '';
-                renderTabContent();
-            } catch (err) {
-                showCustomModal({ title: "Ошибка", description: "Не удалось загрузить файл: " + err.message });
-            }
-        }
-
-        window.onload = async () => {
-            try {
-                await initIndexedDB();
-                const salt = await getMetadata("vault_salt");
-                if (salt) {
-                    isAppInitialized = true;
-                    document.getElementById('mainTitle').innerText = "Введите пароль";
-                    document.getElementById('mainDesc').innerText = "Сейф обнаружен на этом устройстве. Введите ключ для разблокировки.";
-                    document.getElementById('passInput').placeholder = "Введите ваш пароль";
-                }
-            } catch (err) {
-                showCustomModal({ title: "БД Ошибка", description: "Ошибка при обращении к IndexedDB: " + err.message });
-            }
-        };
-
-        document.querySelectorAll('.folder-item').forEach(folder => {
-            let isDragging = false;
-            let startX, startY;
-            const img = folder.querySelector('img');
-
-            folder.addEventListener('mousedown', dragStart);
-            folder.addEventListener('touchstart', dragStart, { passive: true });
-
-            function dragStart(e) {
-                if (!document.getElementById('viewport').classList.contains('opened')) return;
-                isDragging = true;
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-                startX = clientX;
-                startY = clientY;
-
-                document.addEventListener('mousemove', dragMove);
-                document.addEventListener('touchmove', dragMove, { passive: false });
-                document.addEventListener('mouseup', dragEnd);
-                document.addEventListener('touchend', dragEnd);
-            }
-
-            function dragMove(e) {
-                if (!isDragging) return;
-                if (e.cancelable) e.preventDefault();
-
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
-                let deltaX = clientX - startX;
-                let deltaY = clientY - startY;
-
-                const maxDist = 18;
-                const dist = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-                if (dist > maxDist) {
-                    deltaX = (deltaX / dist) * maxDist;
-                    deltaY = (deltaY / dist) * maxDist;
-                }
-
-                const skewX = deltaX * 0.4;
-                const scaleX = 1 + Math.abs(deltaX) * 0.003;
-
-                folder.style.zIndex = '100';
-                img.style.transform = `translate(${deltaX}px, ${deltaY}px) skewX(${skewX}deg) scaleX(${scaleX})`;
-            }
-
-            function dragEnd() {
-                if (!isDragging) return;
-                isDragging = false;
-                folder.style.zIndex = '15';
-                
-                img.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-                img.style.transform = 'translate(0, 0) skewX(0deg) scaleX(1)';
-                
-                setTimeout(() => { img.style.transition = 'transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1)'; }, 300);
-
-                document.removeEventListener('mousemove', dragMove);
-                document.removeEventListener('touchmove', dragMove);
-                document.removeEventListener('mouseup', dragEnd);
-                document.removeEventListener('touchend', dragEnd);
-            }
-        });
-    </script>
+</div>
+
+<div class="sheet" id="shT">
+    <div class="sh-top">
+        <div style="font-weight:700;font-size:22px;letter-spacing:-0.5px;" id="stT"></div>
+        <div class="sh-cls" onclick="document.getElementById('shT').classList.remove('on')">Готово</div>
+    </div>
+    <div class="sh-bdy" id="stB"></div>
+</div>
+
+<div class="gal" id="gA">
+    <div class="g-ctrl btn-drop" onclick="document.getElementById('gA').classList.remove('on'); document.getElementById('gW').innerHTML='';">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </div>
+    <div class="g-wrap" id="gW"></div>
+</div>
+
+<input type="file" id="fP" style="display:none;" onchange="hF(this)">
+
+<script>
+let uL=!1,cT='',cF='root',fH=[],iN=!1,dK=null,cH='';
+const dC={n:"SV_26",v:1};
+let lD=null;
+const iD=()=>new Promise((r,j)=>{const q=indexedDB.open(dC.n,dC.v);q.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains("m"))d.createObjectStore("m");if(!d.objectStoreNames.contains("p"))d.createObjectStore("p",{keyPath:"id",autoIncrement:!0});};q.onsuccess=e=>{lD=e.target.result;r(lD);};q.onerror=e=>j(e.target.error);});
+const gM=k=>new Promise(r=>{const q=lD.transaction("m","readonly").objectStore("m").get(k);q.onsuccess=()=>r(q.result);q.onerror=()=>r(null);});
+const sM=(k,v)=>new Promise(r=>{const q=lD.transaction("m","readwrite").objectStore("m").put(v,k);q.onsuccess=()=>r(!0);q.onerror=()=>r(!1);});
+const sV=i=>new Promise((r,j)=>{const q=lD.transaction("p","readwrite").objectStore("p").add(i);q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error);});
+const dV=i=>new Promise(r=>{const q=lD.transaction("p","readwrite").objectStore("p").delete(i);q.onsuccess=()=>r(!0);q.onerror=()=>r(!1);});
+const gV=p=>new Promise(r=>{const q=lD.transaction("p","readonly").objectStore("p").getAll();q.onsuccess=()=>r((q.result||[]).filter(i=>i.pid===p));q.onerror=()=>r([]);});
+const cV=t=>new Promise(r=>{const q=lD.transaction("p","readonly").objectStore("p").getAll();q.onsuccess=()=>r((q.result||[]).filter(i=>i.t===t).length);q.onerror=()=>r(0);});
+const pM=o=>{const e=document.getElementById('oM'),t=document.getElementById('mtT'),s=document.getElementById('mtS'),iC=document.getElementById('mF'),aC=document.getElementById('mA');t.innerText=o.t||'';s.innerText=o.d||'';iC.innerHTML='';aC.innerHTML='';aC.className=o.row?'m-act r':'m-act';let p={};if(o.i)o.i.forEach(x=>{let l=document.createElement(x.ta?'textarea':'input');l.className=x.ta?'i-area':'i-fld';if(!x.ta)l.type=x.ty||'text';l.placeholder=x.p||'';iC.appendChild(l);p[x.id]=l;});if(o.b)o.b.forEach(x=>{let b=document.createElement('div');b.className='b-act '+(x.pr?'pr':(x.rd?'rd':'sc'));b.innerText=x.tx;b.onclick=()=>{let v={};for(let k in p)v[k]=p[k].value;e.classList.remove('on');if(x.h)x.h(v);};aC.appendChild(b);});e.classList.add('on');};
+const dKP=async(p,h)=>{const e=new TextEncoder().encode(p);let s=h?new Uint8Array(h.match(/.{1,2}/g).map(b=>parseInt(b,16))):window.crypto.getRandomValues(new Uint8Array(16));const bk=await window.crypto.subtle.importKey("raw",e,{name:"PBKDF2"},!1,["deriveKey"]);const k=await window.crypto.subtle.deriveKey({name:"PBKDF2",salt:s,iterations:100000,hash:"SHA-256"},bk,{name:"AES-GCM",length:256},!1,["encrypt","decrypt"]);return{k,h:Array.from(s).map(b=>b.toString(16).padStart(2,'0')).join('')};};
+const eD=async(b,k)=>{const i=window.crypto.getRandomValues(new Uint8Array(12));return{i:Array.from(i),p:await window.crypto.subtle.encrypt({name:"AES-GCM",iv:i},k,b)};};
+const dD=async(b,i,k)=>await window.crypto.subtle.decrypt({name:"AES-GCM",iv:new Uint8Array(i)},k,b);
+
+const vK=()=>{const v=document.getElementById('kI').value,r=document.getElementById('aB');if(v.length>=8&&(/[A-ZА-Я]/.test(v))&&/[0-9]/.test(v))r.classList.add('ready');else r.classList.remove('ready');};
+const aE=()=>{const p=document.getElementById('kI').value;if(!p)return;if(!iN)pM({t:"Шифрование AES-GCM",d:"Ваш ключ создаст непробиваемую базу локально.",row:!0,b:[{tx:"Отмена",sc:!0},{tx:"Создать",pr:!0,h:()=>eI(p)}]});else eL(p);};
+const eI=async p=>{const{k,h}=await dKP(p);const v=await eD(new TextEncoder().encode("sv_ok"),k);await sM("salt",h);await sM("ver",v);dK=k;cH=h;eT();};
+const eL=async p=>{const s=await gM("salt"),v=await gM("ver");if(!s||!v)return;const{k}=await dKP(p,s);try{const d=await dD(v.p,v.i,k);if(new TextDecoder().decode(d)!=="sv_ok")throw 1;dK=k;cH=s;eT();}catch(e){pM({t:"Ошибка",d:"Неверный ключ доступа.",b:[{tx:"ОК",pr:!0}]});}};
+const eT=async()=>{document.getElementById('hT').style.opacity=0;document.getElementById('hS').style.opacity=0;document.getElementById('aB').style.opacity=0;setTimeout(async()=>{document.getElementById('hT').innerText="Хранилище";document.getElementById('hS').innerText="Полностью анонимно. Без серверов.";document.getElementById('hT').style.opacity=1;document.getElementById('hS').style.opacity=1;document.getElementById('aB').style.display='none';document.getElementById('mG').style.display='grid';uL=!0;await uR();},400);};
+const uR=async()=>{if(!lD)return;document.getElementById('vT').innerText=await cV('Тексты');document.getElementById('vP').innerText=await cV('Фото');document.getElementById('vO').innerText=await cV('Прочее');};
+const tSf=()=>{if(!uL)return;const v=document.getElementById('vm');if(!v.classList.contains('open')){document.getElementById('sfC').classList.add('hidden');document.getElementById('sfO').classList.remove('hidden');v.classList.add('open');}else cMf();};
+const cMf=()=>{const v=document.getElementById('vm');if(v.classList.contains('open')){v.classList.remove('open');document.getElementById('sfO').classList.add('hidden');document.getElementById('sfC').classList.remove('hidden');}};
+
+const oTb=async t=>{cT=t;cF='root';fH=[];document.getElementById('dT').innerText=t;document.getElementById('fB').style.display=t==='Прочее'?'flex':'none';document.getElementById('drw').classList.add('on');await rL();};
+const cTb=()=>{if(fH.length>0){cF=fH.pop();rL();}else{document.getElementById('drw').classList.remove('on');uR();}};
+const rL=async()=>{const c=document.getElementById('dB');c.innerHTML='';const f=(await gV(cF)).filter(i=>i.t===cT);if(!f.length){c.innerHTML='<div style="text-align:center;color:var(--text-dim);margin-top:60px;font-size:17px;font-weight:500;">Пусто</div>';return;}for(const i of f){const r=document.createElement('div');r.className='row-item';let ic='folder.png',ty='Папка',dn='Зашифровано';if(i.ty==='tx'){ic='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%23FF9500\'><path d=\'M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z\'/></svg>';ty='Текст';}else if(i.ty==='fl'){ic='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%230A84FF\'><path d=\'M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.48-2.02-4.5-4.5-4.5S6 2.52 6 5v12.5c0 3.59 2.91 6.5 6.5 6.5s6.5-2.91 6.5-6.5V6h-1.5z\'/></svg>';ty=i.mt?i.mt.split('/')[1].toUpperCase():'Файл';}try{dn=new TextDecoder().decode(await dD(i.en,i.niv,dK));}catch(e){}r.innerHTML=`<div class="icn-sq"><img src="${ic}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%2334C759\'><path d=\'M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z\'/></svg>'"></div><div class="r-data"><div class="r-name">${dn}</div><div class="r-sub">${ty}</div></div>`;r.onclick=()=>hI(i,dn);c.appendChild(r);}};
+
+const hI=async(i,n)=>{if(i.ty==='fo'){fH.push(cF);cF=i.fid;rL();}else if(i.ty==='tx'){try{document.getElementById('stT').innerText=n;document.getElementById('stB').innerText=new TextDecoder().decode(await dD(i.ep,i.iv,dK));document.getElementById('shT').classList.add('on');}catch(e){}}else if(i.ty==='fl'){try{const b=URL.createObjectURL(new Blob([await dD(i.ep,i.iv,dK)],{type:i.mt}));if(i.mt.startsWith('image/')){const t=document.getElementById('gW');t.innerHTML=`<div class="g-item"><img src="${b}"></div>`;document.getElementById('gA').classList.add('on');}else pM({t:n,d:`Файл расшифрован.`,b:[{tx:"Скачать",pr:!0,h:()=>{const a=document.createElement('a');a.href=b;a.download=n;a.click();}},{tx:"Удалить",rd:!0,h:async()=>{await dV(i.id);rL();}}]});}catch(e){}}};
+const nFd=()=>pM({t:"Новая папка",d:"Создать директорию",i:[{id:'n',p:'Название'}],row:!0,b:[{tx:"Отмена",sc:!0},{tx:"Создать",pr:!0,h:async v=>{if(!v.n)return;const e=await eD(new TextEncoder().encode(v.n),dK);await sV({t:cT,ty:'fo',pid:cF,fid:crypto.randomUUID(),en:e.p,niv:e.i});rL();}}]});
+const aOb=()=>{if(cT==='Тексты')pM({t:"Новая запись",i:[{id:'t',p:'Заголовок'},{id:'c',p:'Текст',ta:!0}],row:!0,b:[{tx:"Отмена",sc:!0},{tx:"Сохранить",pr:!0,h:async v=>{if(!v.t||!v.c)return;const n=await eD(new TextEncoder().encode(v.t),dK),p=await eD(new TextEncoder().encode(v.c),dK);await sV({t:cT,ty:'tx',pid:cF,en:n.p,niv:n.i,ep:p.p,iv:p.i});rL();}}]});else{const p=document.getElementById('fP');p.accept=cT==='Фото'?"image/*":"*/*";p.click();}};
+const hF=async el=>{const f=el.files[0];if(!f)return;pM({t:"Добавить",d:`Шифруем ${f.name}`,row:!0,b:[{tx:"Отмена",sc:!0,h:()=>{el.value='';}},{tx:"Шифровать",pr:!0,h:async()=>{const n=await eD(new TextEncoder().encode(f.name),dK),p=await eD(await f.arrayBuffer(),dK);await sV({t:cT,ty:'fl',pid:cF,mt:f.type||'application/octet-stream',en:n.p,niv:n.i,ep:p.p,iv:p.i});el.value='';rL();}}]});};
+window.onload=async()=>{try{await iD();if(await gM("salt")){iN=!0;document.getElementById('hT').innerText="Сейф заперт";document.getElementById('hS').innerText="Введите мастер-ключ для входа";document.getElementById('kI').placeholder="Мастер-ключ";}}catch(e){}};
+</script>
 </body>
 </html>
