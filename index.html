@@ -4,19 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Sovereign Vault</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
             --ios-bg: #000000;
             --ios-dark-gray: #1C1C1E;
             --ios-border-light: rgba(255, 255, 255, 0.06);
             --ios-hint: rgba(255, 255, 255, 0.45);
-            --glass-bg: rgba(28, 28, 30, 0.65);
-            --glass-border: 1px solid rgba(255, 255, 255, 0.12);
-            --glass-shine: inset 0 1px 1.5px rgba(255, 255, 255, 0.2);
-            --glass-shadow: 0 24px 48px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.4);
-            --ios-blue: #0A84FF;
+            --liquid-glass-bg: rgba(120, 120, 128, 0.22);
+            --liquid-glass-blur: blur(40px);
+            --liquid-glass-border: 0.5px solid rgba(255, 255, 255, 0.15);
+            --liquid-glass-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2), 0 10px 30px rgba(0, 0, 0, 0.3);
+            --liquid-blue: #0A84FF;
         }
-
         * {
             -webkit-user-select: none;
             user-select: none;
@@ -24,9 +24,9 @@
             -webkit-tap-highlight-color: transparent;
             box-sizing: border-box;
         }
-
         body, html {
             background-color: var(--ios-bg);
+            background-image: radial-gradient(circle at 50% -20%, #0a1128 0%, #000000 70%);
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
             color: white;
             margin: 0;
@@ -38,8 +38,17 @@
             -webkit-font-smoothing: antialiased;
             touch-action: none;
         }
-
-
+        input, textarea {
+            -webkit-user-select: text;
+            user-select: text;
+        }
+        .liquid-glass {
+            background: var(--liquid-glass-bg);
+            backdrop-filter: var(--liquid-glass-blur) saturate(200%);
+            -webkit-backdrop-filter: var(--liquid-glass-blur) saturate(200%);
+            border: var(--liquid-glass-border);
+            box-shadow: var(--liquid-glass-shadow);
+        }
         .app-viewport {
             position: fixed;
             top: 0;
@@ -50,8 +59,8 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            z-index: 10;
         }
-
         .center-wrapper {
             width: 100%;
             max-width: 320px;
@@ -62,7 +71,6 @@
             padding: 0 16px;
             position: relative;
         }
-
         .safe-area-container {
             position: relative;
             width: 120px;
@@ -70,31 +78,26 @@
             margin-bottom: 28px;
             z-index: 10;
         }
-
         .safe-image {
             width: 120px;
             height: 120px;
             object-fit: contain;
             display: block;
             filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.5));
-            transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.25s ease;
+            transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease;
             position: absolute;
             top: 0;
             left: 0;
             cursor: pointer;
         }
-
         .safe-image:active {
             transform: scale(0.92);
         }
-
         .safe-image.hidden {
             opacity: 0;
             transform: scale(0.8);
             pointer-events: none;
         }
-
-
         .folder-item {
             position: absolute;
             width: 56px;
@@ -103,50 +106,50 @@
             align-items: center;
             opacity: 0;
             pointer-events: none;
-            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+            transition: transform 0.6s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.4s ease;
             z-index: -1;
             cursor: grab;
             will-change: transform;
         }
-
         .folder-item:active {
             cursor: grabbing;
         }
-
         .folder-item img {
             width: 50px;
             height: auto;
             object-fit: contain;
             pointer-events: none;
-            transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
+            transition: transform 0.2s cubic-bezier(0.32, 0.72, 0, 1);
         }
-
         .folder-badge {
-            background-color: var(--glass-bg);
-            border: var(--glass-border);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            box-shadow: var(--glass-shine);
-            padding: 3px 8px;
+            background: var(--liquid-glass-bg);
+            backdrop-filter: var(--liquid-glass-blur) saturate(200%);
+            -webkit-backdrop-filter: var(--liquid-glass-blur) saturate(200%);
+            border: var(--liquid-glass-border);
+            padding: 4px 10px;
             border-radius: 999px;
             font-size: 10px;
-            font-weight: 500;
+            font-weight: 600;
             color: white;
             white-space: nowrap;
-            margin-top: 4px;
+            margin-top: 6px;
             pointer-events: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
-
         .app-viewport.opened .folder-item {
             opacity: 1;
             pointer-events: auto;
             z-index: 15;
         }
-        
-        .app-viewport.opened .folder-item.f-left { transform: translate(-95px, -45px); }
-        .app-viewport.opened .folder-item.f-center { transform: translate(32px, -85px); }
-        .app-viewport.opened .folder-item.f-right { transform: translate(160px, -45px); }
-
+        .app-viewport.opened .folder-item.f-left {
+            transform: translate(-95px, -45px);
+        }
+        .app-viewport.opened .folder-item.f-center {
+            transform: translate(32px, -85px);
+        }
+        .app-viewport.opened .folder-item.f-right {
+            transform: translate(160px, -45px);
+        }
         .title-frame {
             height: 34px;
             overflow: hidden;
@@ -154,7 +157,6 @@
             width: 100%;
             margin-bottom: 12px;
         }
-
         .title {
             font-size: 28px;
             font-weight: 700;
@@ -165,35 +167,29 @@
             width: 100%;
             left: 0;
             top: 0;
-            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease;
+            transition: transform 0.6s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.4s ease;
         }
-
         .title.incoming {
             transform: translateY(-100%);
             opacity: 0;
         }
-
         .description {
             font-size: 14px;
             font-weight: 400;
             line-height: 1.45;
             color: var(--ios-hint);
             margin: 0 0 36px 0;
-            transition: opacity 0.25s ease;
+            transition: opacity 0.3s ease;
         }
-
-
         .controls-row {
             width: 100%;
             display: flex;
             position: relative;
         }
-
         .input-container {
             flex: 1;
             position: relative;
         }
-
         .ios-input {
             width: 100%;
             height: 52px;
@@ -206,20 +202,17 @@
             text-align: center;
             outline: none;
             -webkit-appearance: none;
-            -webkit-user-select: text;
-            user-select: text;
+            transition: background-color 0.3s ease;
         }
-
         .ios-input::placeholder {
             color: var(--ios-hint);
             opacity: 0.6;
             text-align: center;
         }
-
         .ios-input:focus {
-            animation: tap-jelly-fast 0.25s cubic-bezier(0.25, 1.3, 0.4, 1.4) forwards;
+            animation: tap-spring 0.4s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+            background-color: #2C2C2E;
         }
-
         .login-btn {
             width: 0;
             height: 52px;
@@ -233,32 +226,28 @@
             opacity: 0;
             cursor: pointer;
             pointer-events: none;
-            transition: width 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease, margin-left 0.35s ease;
+            transition: width 0.5s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease, margin-left 0.5s ease;
         }
-
         .login-btn img {
             width: 22px;
             height: 22px;
             object-fit: contain;
             display: block;
         }
-
         .controls-row.valid .login-btn {
             width: 52px;
             opacity: 1;
             margin-left: 10px;
             pointer-events: auto;
-            animation: button-bounce 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            animation: button-pop 0.5s cubic-bezier(0.32, 0.72, 0, 1) forwards;
         }
-
         .counters-grid {
             width: 100%;
             display: none;
             grid-template-columns: repeat(3, 1fr);
             gap: 10px;
-            animation: fade-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation: fade-up-spring 0.6s cubic-bezier(0.32, 0.72, 0, 1) forwards;
         }
-
         .counter-pill {
             height: 52px;
             background-color: var(--ios-dark-gray);
@@ -269,105 +258,156 @@
             align-items: center;
             justify-content: center;
         }
-
         .counter-val {
             font-size: 16px;
             font-weight: 700;
             line-height: 1.1;
         }
-
         .counter-label {
             font-size: 10px;
             font-weight: 500;
             color: var(--ios-hint);
             margin-top: 1px;
         }
-
-
         .folder-tab {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            background-color: #000000;
+            background-image: radial-gradient(circle at 50% -20%, #0a1128 0%, #000000 70%);
             z-index: 100;
             display: flex;
             flex-direction: column;
-            align-items: center;
             transform: translateY(100%);
-            transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+            transition: transform 0.6s cubic-bezier(0.32, 0.72, 0, 1);
         }
-
         .folder-tab.active {
             transform: translateY(0);
         }
-
-        .tab-header-area {
+        .tab-header {
             position: absolute;
-            top: 15px;
+            top: calc(15px + env(safe-area-inset-top));
             left: 0;
             width: 100%;
-            padding: 0 16px;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 44px;
             z-index: 110;
         }
-
-        .glass-drop {
+        .liquid-drop-btn {
             position: absolute;
-            width: 44px;
-            height: 44px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(50px) saturate(200%);
-            -webkit-backdrop-filter: blur(50px) saturate(200%);
-            border: var(--glass-border);
-            box-shadow: var(--glass-shine), 0 8px 16px rgba(0,0,0,0.3);
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: transform 0.2s cubic-bezier(0.32, 0.72, 0, 1);
+            transition: transform 0.2s ease;
         }
-
-        .glass-drop:active {
+        .liquid-drop-btn:active {
             transform: scale(0.9);
         }
-        
-        .glass-drop.left { left: 16px; }
-        .glass-drop.right { right: 16px; display: none; }
-
-        .glass-drop svg {
-            width: 20px;
-            height: 20px;
-            fill: none;
-            stroke: #ffffff;
-            stroke-width: 2.5;
-            stroke-linecap: round;
-            stroke-linejoin: round;
+        .liquid-drop-btn img {
+            width: 16px;
+            height: 16px;
+            object-fit: contain;
         }
-
+        .back-drop {
+            left: 20px;
+        }
+        .add-folder-drop {
+            right: 20px;
+            display: none;
+        }
         .tab-title {
             font-size: 20px;
             font-weight: 700;
             letter-spacing: -0.3px;
-            color: #fff;
         }
-
-        .glass-capsule-btn {
+        .tab-content {
+            flex: 1;
+            width: 100%;
+            padding: calc(75px + env(safe-area-inset-top)) 20px calc(90px + env(safe-area-inset-bottom));
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+            gap: 16px;
+            align-content: flex-start;
+        }
+        .list-content {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            grid-template-columns: none;
+        }
+        .item-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            animation: fade-up-spring 0.5s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+            opacity: 0;
+        }
+        .item-card:active {
+            transform: scale(0.95);
+        }
+        .item-preview {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 20px;
+            background: var(--liquid-glass-bg);
+            border: var(--liquid-glass-border);
+            backdrop-filter: var(--liquid-glass-blur);
+            -webkit-backdrop-filter: var(--liquid-glass-blur);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--liquid-glass-shadow);
+        }
+        .item-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .folder-icon-preview img {
+            width: 36px;
+            height: 36px;
+            object-fit: contain;
+        }
+        .item-label {
+            margin-top: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            color: rgba(255,255,255,0.8);
+            text-align: center;
+            width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .list-card {
+            width: 100%;
+            padding: 16px;
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            animation: fade-up-spring 0.5s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+            opacity: 0;
+        }
+        .list-card-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .add-capsule-btn {
             position: absolute;
-            bottom: 15px;
+            bottom: calc(15px + env(safe-area-inset-bottom));
             left: 50%;
             transform: translateX(-50%);
             height: 52px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(50px) saturate(200%);
-            -webkit-backdrop-filter: blur(50px) saturate(200%);
-            border: var(--glass-border);
-            box-shadow: var(--glass-shine), var(--glass-shadow);
             border-radius: 999px;
             display: flex;
             align-items: center;
@@ -375,675 +415,970 @@
             padding: 0 28px;
             cursor: pointer;
             transition: transform 0.2s cubic-bezier(0.32, 0.72, 0, 1);
-            z-index: 110;
+            z-index: 120;
         }
-
-        .glass-capsule-btn:active {
-            transform: translateX(-50%) scale(0.95);
+        .add-capsule-btn:active {
+            transform: translateX(-50%) scale(0.92);
         }
-
-        .glass-capsule-btn svg {
-            width: 20px;
-            height: 20px;
+        .add-capsule-btn img {
+            width: 18px;
+            height: 18px;
+            object-fit: contain;
             margin-right: 8px;
-            fill: none;
-            stroke: #ffffff;
-            stroke-width: 2.5;
-            stroke-linecap: round;
+            filter: brightness(0) invert(1);
         }
-
-        .glass-capsule-btn span {
-            color: #ffffff;
+        .add-capsule-btn span {
+            color: white;
             font-size: 16px;
             font-weight: 600;
         }
-
-        .content-grid {
-            width: 100%;
-            height: 100%;
-            padding: 80px 16px 80px 16px;
-            overflow-y: auto;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-            gap: 16px;
-            align-content: flex-start;
-        }
-
-        .inner-folder {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            cursor: pointer;
-        }
-
-        .inner-folder img {
-            width: 60px;
-            height: 60px;
-            object-fit: contain;
-            margin-bottom: 6px;
-        }
-
-        .inner-folder span {
-            background-color: var(--glass-bg);
-            border: var(--glass-border);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            padding: 3px 8px;
-            border-radius: 999px;
-            font-size: 11px;
-            font-weight: 500;
-            color: white;
-            text-align: center;
-            width: 100%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-
-        .custom-alert-overlay {
+        .overlay {
             position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.4);
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.4);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            z-index: 999;
+            z-index: 200;
             display: flex;
             align-items: center;
             justify-content: center;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.4s ease;
         }
-
-        .custom-alert-overlay.active {
+        .overlay.active {
             opacity: 1;
             pointer-events: auto;
         }
-
-        .custom-alert-box {
+        .ios26-alert {
             width: 290px;
             background: rgba(30, 30, 32, 0.75);
             backdrop-filter: blur(50px) saturate(200%);
             -webkit-backdrop-filter: blur(50px) saturate(200%);
-            border: var(--glass-border);
-            box-shadow: var(--glass-shine), var(--glass-shadow);
             border-radius: 32px;
+            border: var(--liquid-glass-border);
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 24px 48px rgba(0,0,0,0.6);
             display: flex;
             flex-direction: column;
             align-items: center;
             padding: 24px 20px 20px;
             transform: scale(0.9);
-            transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+            transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
         }
-
-        .custom-alert-overlay.active .custom-alert-box {
+        .overlay.active .ios26-alert {
             transform: scale(1);
         }
-
-        .custom-alert-title {
-            font-size: 17px;
-            font-weight: 600;
-            margin-bottom: 6px;
+        .alert-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
             text-align: center;
         }
-
-        .custom-alert-desc {
-            font-size: 13px;
+        .alert-desc {
+            font-size: 14px;
             font-weight: 400;
-            color: var(--ios-hint);
+            color: rgba(255,255,255,0.6);
             text-align: center;
-            margin-bottom: 20px;
             line-height: 1.4;
+            margin-bottom: 24px;
         }
-
-        .custom-alert-actions {
+        .alert-input {
+            width: 100%;
+            height: 44px;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            color: white;
+            padding: 0 12px;
+            font-size: 15px;
+            margin-bottom: 24px;
+            outline: none;
+            display: none;
+        }
+        .alert-input:focus {
+            border-color: var(--liquid-blue);
+        }
+        .alert-btn-stack {
             width: 100%;
             display: flex;
+            flex-direction: column;
             gap: 10px;
         }
-
         .alert-btn {
-            flex: 1;
-            height: 44px;
+            width: 100%;
+            height: 48px;
             border-radius: 999px;
-            border: none;
-            font-size: 15px;
-            font-weight: 600;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
+            transition: transform 0.2s ease, opacity 0.2s ease;
         }
-
-        .alert-btn.secondary {
-            background: rgba(255, 255, 255, 0.1);
+        .alert-btn:active {
+            transform: scale(0.96);
+        }
+        .btn-primary {
+            background: var(--liquid-blue);
             color: white;
         }
-
-        .alert-btn.primary {
-            background: var(--ios-blue);
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
             color: white;
-            box-shadow: inset 0 1px 1px rgba(255,255,255,0.3);
         }
-
-        .viewer-overlay {
+        .btn-danger {
+            background: rgba(255, 59, 48, 0.15);
+            color: #FF453A;
+        }
+        .lightbox {
             position: fixed;
-            inset: 0;
-            background: #000;
-            z-index: 500;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.4s ease;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .viewer-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .viewer-header {
-            position: absolute;
-            top: 15px;
+            top: 0;
             left: 0;
-            width: 100%;
-            height: 44px;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.9);
+            z-index: 300;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        .lightbox.active {
+            display: block;
+            opacity: 1;
+        }
+        .lightbox-close {
+            position: absolute;
+            top: calc(15px + env(safe-area-inset-top));
+            right: 20px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
-            padding: 0 16px;
-            z-index: 510;
+            justify-content: center;
+            z-index: 310;
+            cursor: pointer;
         }
-
-        .photo-container {
+        .lightbox-close svg {
+            width: 16px;
+            height: 16px;
+            stroke: white;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+        }
+        .lightbox-track {
             width: 100%;
             height: 100%;
             display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+        }
+        .lightbox-track::-webkit-scrollbar {
+            display: none;
+        }
+        .lightbox-slide {
+            min-width: 100vw;
+            height: 100vh;
+            scroll-snap-align: center;
+            display: flex;
             align-items: center;
             justify-content: center;
+            position: relative;
             overflow: hidden;
-            touch-action: none;
         }
-
-        .photo-container img {
+        .lightbox-slide img {
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
-            transition: transform 0.1s linear;
+            transition: transform 0.1s;
+            transform-origin: center center;
         }
-
-        .text-sheet {
-            position: absolute;
+        .text-reader {
+            position: fixed;
             bottom: 0;
             left: 0;
+            width: 100vw;
+            height: calc(100vh - env(safe-area-inset-top) - 40px);
+            background: var(--ios-bg);
+            border-radius: 32px 32px 0 0;
+            z-index: 250;
+            transform: translateY(100%);
+            transition: transform 0.6s cubic-bezier(0.32, 0.72, 0, 1);
+            display: flex;
+            flex-direction: column;
+        }
+        .text-reader.active {
+            transform: translateY(0);
+        }
+        .reader-header {
             width: 100%;
-            height: 90vh;
-            background: rgba(28, 28, 30, 0.95);
-            backdrop-filter: blur(40px);
-            -webkit-backdrop-filter: blur(40px);
-            border-top-left-radius: 32px;
-            border-top-right-radius: 32px;
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.15);
-            border-top: var(--glass-border);
+            height: 54px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            border-bottom: var(--liquid-glass-border);
+        }
+        .reader-close {
+            color: var(--liquid-blue);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .reader-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .reader-body {
+            flex: 1;
+            padding: 24px 20px;
+            overflow-y: auto;
+            font-size: 17px;
+            line-height: 1.6;
+            color: rgba(255,255,255,0.9);
+            white-space: pre-wrap;
+        }
+        .text-editor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: var(--ios-bg);
+            z-index: 260;
             transform: translateY(100%);
             transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
             display: flex;
             flex-direction: column;
+            padding-top: env(safe-area-inset-top);
         }
-
-        .viewer-overlay.active .text-sheet {
+        .text-editor.active {
             transform: translateY(0);
         }
-
-        .sheet-handle {
-            width: 36px;
-            height: 5px;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 999px;
-            margin: 12px auto;
+        .editor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
         }
-
-        .sheet-content {
-            flex: 1;
-            padding: 0 24px 40px;
-            overflow-y: auto;
-            font-size: 17px;
-            line-height: 1.6;
+        .editor-title-input {
+            background: transparent;
+            border: none;
             color: white;
-            white-space: pre-wrap;
+            font-size: 18px;
+            font-weight: 700;
+            outline: none;
+            flex: 1;
+            margin: 0 16px;
+            text-align: center;
         }
-
-        @keyframes tap-jelly-fast {
+        .editor-btn {
+            color: var(--liquid-blue);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .editor-area {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 17px;
+            line-height: 1.5;
+            padding: 20px;
+            outline: none;
+            resize: none;
+        }
+        .hidden-file-input {
+            display: none;
+        }
+        @keyframes tap-spring {
             0% { transform: scale(1); }
-            45% { transform: scaleX(1.04) scaleY(0.96); }
+            50% { transform: scaleX(1.03) scaleY(0.97); }
             100% { transform: scale(1); }
         }
-
-        @keyframes button-bounce {
-            0% { transform: scale(0.65); }
-            70% { transform: scale(1.06); }
+        @keyframes button-pop {
+            0% { transform: scale(0.8); }
+            60% { transform: scale(1.05); }
             100% { transform: scale(1); }
         }
-
-        @keyframes fade-in-up {
-            0% { opacity: 0; transform: translateY(10px) scale(0.98); }
+        @keyframes fade-up-spring {
+            0% { opacity: 0; transform: translateY(20px) scale(0.95); }
             100% { opacity: 1; transform: translateY(0) scale(1); }
         }
     </style>
 </head>
 <body>
-
-
     <div class="app-viewport" id="viewport" onclick="closeFolders(event)">
         <div class="center-wrapper" onclick="event.stopPropagation()">
-            
             <div class="safe-area-container">
-                <div class="folder-item f-left" onclick="openTab('Тексты')">
-                    <img src="folder.png" onerror="this.outerHTML='<svg viewBox=\'0 0 100 100\'><path d=\'M10 80C10 85.5 14.5 90 20 90H80C85.5 90 90 85.5 90 80V40H10V80ZM45 10H20C14.5 10 10 14.5 10 20V30H90V25C90 19.5 85.5 15 80 15H55L45 10Z\' fill=\'#0A84FF\'/></svg>'">
+                <div class="folder-item f-left" onclick="openRootTab('Тексты')">
+                    <img src="folder.png" alt="Folder" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%230A84FF\'><path d=\'M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z\'/></svg>'">
                     <div class="folder-badge">Тексты</div>
                 </div>
-                <div class="folder-item f-center" onclick="openTab('Фото')">
-                    <img src="folder.png" onerror="this.outerHTML='<svg viewBox=\'0 0 100 100\'><path d=\'M10 80C10 85.5 14.5 90 20 90H80C85.5 90 90 85.5 90 80V40H10V80ZM45 10H20C14.5 10 10 14.5 10 20V30H90V25C90 19.5 85.5 15 80 15H55L45 10Z\' fill=\'#0A84FF\'/></svg>'">
+                <div class="folder-item f-center" onclick="openRootTab('Фото')">
+                    <img src="folder.png" alt="Folder" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%230A84FF\'><path d=\'M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z\'/></svg>'">
                     <div class="folder-badge">Фото</div>
                 </div>
-                <div class="folder-item f-right" onclick="openTab('Прочее')">
-                    <img src="folder.png" onerror="this.outerHTML='<svg viewBox=\'0 0 100 100\'><path d=\'M10 80C10 85.5 14.5 90 20 90H80C85.5 90 90 85.5 90 80V40H10V80ZM45 10H20C14.5 10 10 14.5 10 20V30H90V25C90 19.5 85.5 15 80 15H55L45 10Z\' fill=\'#0A84FF\'/></svg>'">
+                <div class="folder-item f-right" onclick="openRootTab('Прочее')">
+                    <img src="folder.png" alt="Folder" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%230A84FF\'><path d=\'M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z\'/></svg>'">
                     <div class="folder-badge">Прочее</div>
                 </div>
-
-                <img src="safe.png" class="safe-image" id="safeClosed" onclick="handleSafeClick()" onerror="this.outerHTML='<svg class=\'safe-image\' id=\'safeClosed\' onclick=\'handleSafeClick()\' viewBox=\'0 0 100 100\'><rect x=\'10\' y=\'10\' width=\'80\' height=\'80\' rx=\'20\' fill=\'#1C1C1E\' stroke=\'#333\' stroke-width=\'4\'/><circle cx=\'50\' cy=\'50\' r=\'20\' fill=\'none\' stroke=\'#888\' stroke-width=\'6\'/><circle cx=\'50\' cy=\'50\' r=\'6\' fill=\'#888\'/></svg>'">
-                <img src="safe2.png" class="safe-image hidden" id="safeOpened" onclick="handleSafeClick()" onerror="this.outerHTML='<svg class=\'safe-image hidden\' id=\'safeOpened\' onclick=\'handleSafeClick()\' viewBox=\'0 0 100 100\'><rect x=\'10\' y=\'10\' width=\'80\' height=\'80\' rx=\'20\' fill=\'#1C1C1E\' stroke=\'#333\' stroke-width=\'4\'/><path d=\'M50 30 V70 M30 50 H70\' stroke=\'#0A84FF\' stroke-width=\'8\' stroke-linecap=\'round\'/></svg>'">
+                <img src="safe.png" alt="Safe Closed" class="safe-image" id="safeClosed" onclick="handleSafeClick()" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'white\'><rect x=\'3\' y=\'11\' width=\'18\' height=\'11\' rx=\'2\' ry=\'2\'/><path d=\'M7 11V7a5 5 0 0 1 10 0v4\'/><circle cx=\'12\' cy=\'16\' r=\'1\' fill=\'black\'/></svg>'">
+                <img src="safe2.png" alt="Safe Opened" class="safe-image hidden" id="safeOpened" onclick="handleSafeClick()" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'white\'><rect x=\'3\' y=\'11\' width=\'18\' height=\'11\' rx=\'2\' ry=\'2\'/><path d=\'M7 11V3a5 5 0 0 1 10 0v4\'/><circle cx=\'12\' cy=\'16\' r=\'1\' fill=\'black\'/></svg>'">
             </div>
-            
             <div class="title-frame">
                 <h1 class="title" id="mainTitle">Добро пожаловать!</h1>
             </div>
-            
             <p class="description" id="mainDesc">Придумай надежные пароль, который содержит минимум 8 символов, заглавную букву и цифру</p>
-            
             <div class="controls-row" id="controlsRow">
                 <div class="input-container">
                     <input type="password" class="ios-input" id="passInput" placeholder="ABC123" autocomplete="off" oninput="validatePassword(this)">
                 </div>
-                <div class="login-btn" id="loginBtn" onclick="initiateLogin()">
-                    <img src="login.png" onerror="this.outerHTML='<svg viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'#fff\' stroke-width=\'2.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\' style=\'width:20px;height:20px;\'><path d=\'M5 12h14M12 5l7 7-7 7\'/></svg>'">
+                <div class="login-btn" id="loginBtn" onclick="triggerAuth()">
+                    <img src="login.png" alt="Login" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'white\'><path d=\'M5 12h14M12 5l7 7-7 7\' stroke=\'white\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'/></svg>'">
                 </div>
             </div>
-
             <div class="counters-grid" id="countersGrid">
                 <div class="counter-pill">
-                    <div class="counter-val">0</div>
+                    <div class="counter-val" id="c-txt">0</div>
                     <div class="counter-label">Текстов</div>
                 </div>
                 <div class="counter-pill">
-                    <div class="counter-val">0</div>
+                    <div class="counter-val" id="c-img">0</div>
                     <div class="counter-label">Фото</div>
                 </div>
                 <div class="counter-pill">
-                    <div class="counter-val">0</div>
+                    <div class="counter-val" id="c-oth">0</div>
                     <div class="counter-label">Прочего</div>
                 </div>
             </div>
-
         </div>
     </div>
 
-
     <div class="folder-tab" id="folderTab">
-        <div class="tab-header-area">
-            <div class="glass-drop left" onclick="closeActiveTab()">
-                <svg viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" /></svg>
+        <div class="tab-header">
+            <div class="liquid-drop-btn liquid-glass back-drop" onclick="popTab()">
+                <img src="back.png" alt="Back" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'2.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><path d=\'M15 18l-6-6 6-6\'/></svg>'">
             </div>
             <div class="tab-title" id="tabTitle">Раздел</div>
-            <div class="glass-drop right" id="createInnerFolderBtn" onclick="createInnerFolder()">
-                <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
+            <div class="liquid-drop-btn liquid-glass add-folder-drop" id="addFolderBtn" onclick="promptNewFolder()">
+                <img src="add.png" alt="Add Folder" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'2.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><path d=\'M12 5v14M5 12h14\'/></svg>'">
             </div>
         </div>
-        
-        <div class="content-grid" id="contentGrid"></div>
-
-        <div class="glass-capsule-btn" onclick="triggerAddAction()">
-            <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
+        <div class="tab-content" id="tabContent"></div>
+        <div class="add-capsule-btn liquid-glass" onclick="triggerAddAction()">
+            <img src="add.png" alt="Add" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'2.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><path d=\'M12 5v14M5 12h14\'/></svg>'">
             <span>Добавить</span>
         </div>
     </div>
 
+    <div class="text-editor" id="textEditor">
+        <div class="editor-header">
+            <div class="editor-btn" onclick="closeTextEditor()">Отмена</div>
+            <input type="text" class="editor-title-input" id="teTitle" placeholder="Название">
+            <div class="editor-btn" onclick="saveTextData()">Сохранить</div>
+        </div>
+        <textarea class="editor-area" id="teBody" placeholder="Начните вводить текст..."></textarea>
+    </div>
 
-    <div class="custom-alert-overlay" id="iosAlertOverlay">
-        <div class="custom-alert-box">
-            <div class="custom-alert-title" id="iosAlertTitle">Уведомление</div>
-            <div class="custom-alert-desc" id="iosAlertDesc">Текст</div>
-            <div class="custom-alert-actions" id="iosAlertActions"></div>
+    <div class="text-reader" id="textReader">
+        <div class="reader-header liquid-glass">
+            <div class="reader-title" id="trTitle">Текст</div>
+            <div class="reader-close" onclick="closeTextReader()">Закрыть</div>
+        </div>
+        <div class="reader-body" id="trBody"></div>
+    </div>
+
+    <div class="lightbox" id="lightbox">
+        <div class="lightbox-close liquid-glass" onclick="closeLightbox()">
+            <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </div>
+        <div class="lightbox-track" id="lbTrack"></div>
+    </div>
+
+    <div class="overlay" id="alertOverlay">
+        <div class="ios26-alert">
+            <div class="alert-title" id="alTitle">Внимание</div>
+            <div class="alert-desc" id="alDesc">Описание</div>
+            <input type="text" class="alert-input" id="alInput" autocomplete="off" spellcheck="false">
+            <div class="alert-btn-stack" id="alBtns"></div>
         </div>
     </div>
 
-    <div class="viewer-overlay" id="photoViewer">
-        <div class="viewer-header">
-            <div class="glass-drop left" onclick="closePhotoViewer()">
-                <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" /></svg>
-            </div>
-        </div>
-        <div class="photo-container" id="photoContainer">
-            <img id="viewerImage" src="" alt="">
-        </div>
-    </div>
-
-    <div class="viewer-overlay" id="textViewer">
-        <div class="viewer-header">
-            <div class="glass-drop left" onclick="closeTextViewer()">
-                <svg viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" /></svg>
-            </div>
-        </div>
-        <div class="text-sheet">
-            <div class="sheet-handle"></div>
-            <div class="sheet-content" id="viewerText"></div>
-        </div>
-    </div>
-
+    <input type="file" id="filePicker" class="hidden-file-input" onchange="handleFileSelect(event)">
 
     <script>
-        let isWorkspaceUnlocked = false;
-        let currentTabType = '';
-        let hasVisited = localStorage.getItem('sv_visited');
+        const DB_NAME = 'SovereignVaultDB';
+        const DB_VER = 1;
+        const SALT = new TextEncoder().encode('sovereign_ios26_salt');
+        let db = null;
+        let cryptoKey = null;
+        let isInit = localStorage.getItem('v_init') === '1';
+        let unlocked = false;
+        let navStack = []; 
+        let currentFolderId = null;
+        let currentItems = [];
 
-        window.onload = () => {
-            if (hasVisited) {
-                document.getElementById('mainTitle').innerText = 'Вход';
-                document.getElementById('mainDesc').innerText = 'Введите ваш пароль для доступа к воркспейсу.';
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.ready();
+                window.Telegram.WebApp.expand();
             }
-        };
+            if (isInit) {
+                document.getElementById('mainTitle').innerText = 'С возвращением';
+                document.getElementById('mainDesc').innerText = 'Введите ваш мастер-пароль для расшифровки хранилища';
+            }
+            await initDB();
+            updateCounters();
+        });
 
-        function customAlert(title, desc, showCancel = true) {
-            return new Promise(resolve => {
-                const overlay = document.getElementById('iosAlertOverlay');
-                document.getElementById('iosAlertTitle').innerText = title;
-                document.getElementById('iosAlertDesc').innerText = desc;
-                
-                const actions = document.getElementById('iosAlertActions');
-                actions.innerHTML = '';
+        document.addEventListener('touchstart', e => { 
+            if (e.touches.length > 1 && e.target.tagName !== 'IMG') e.preventDefault(); 
+        }, { passive: false });
 
-                if (showCancel) {
-                    const cancelBtn = document.createElement('button');
-                    cancelBtn.className = 'alert-btn secondary';
-                    cancelBtn.innerText = 'Отмена';
-                    cancelBtn.onclick = () => { overlay.classList.remove('active'); resolve(false); };
-                    actions.appendChild(cancelBtn);
-                }
-
-                const primaryBtn = document.createElement('button');
-                primaryBtn.className = 'alert-btn primary';
-                primaryBtn.innerText = 'Продолжить';
-                primaryBtn.onclick = () => { overlay.classList.remove('active'); resolve(true); };
-                actions.appendChild(primaryBtn);
-
-                overlay.classList.add('active');
-            });
+        function vibe() {
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+                window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+            }
         }
 
-        async function promptFolderCreation() {
-            return new Promise(resolve => {
-                const overlay = document.getElementById('iosAlertOverlay');
-                document.getElementById('iosAlertTitle').innerText = 'Новая папка';
-                document.getElementById('iosAlertDesc').innerHTML = '<input type="text" id="folderNameInput" class="ios-input" style="height:40px; margin-top:10px; font-size:15px;" placeholder="Название">';
-                
-                const actions = document.getElementById('iosAlertActions');
-                actions.innerHTML = '';
-
-                const cancelBtn = document.createElement('button');
-                cancelBtn.className = 'alert-btn secondary';
-                cancelBtn.innerText = 'Отмена';
-                cancelBtn.onclick = () => { overlay.classList.remove('active'); resolve(null); };
-                actions.appendChild(cancelBtn);
-
-                const primaryBtn = document.createElement('button');
-                primaryBtn.className = 'alert-btn primary';
-                primaryBtn.innerText = 'Создать';
-                primaryBtn.onclick = () => { 
-                    const name = document.getElementById('folderNameInput').value;
-                    overlay.classList.remove('active'); 
-                    resolve(name); 
+        function openAlert(title, desc, btns, showInput = false, onInput = null) {
+            vibe();
+            document.getElementById('alTitle').innerText = title;
+            document.getElementById('alDesc').innerText = desc;
+            const inp = document.getElementById('alInput');
+            inp.style.display = showInput ? 'block' : 'none';
+            inp.value = '';
+            
+            const btnStack = document.getElementById('alBtns');
+            btnStack.innerHTML = '';
+            btns.forEach(b => {
+                const d = document.createElement('div');
+                d.className = `alert-btn btn-${b.type}`;
+                d.innerText = b.text;
+                d.onclick = () => {
+                    if (b.action) {
+                        if (showInput) b.action(inp.value);
+                        else b.action();
+                    }
+                    closeAlert();
                 };
-                actions.appendChild(primaryBtn);
-
-                overlay.classList.add('active');
-                setTimeout(() => document.getElementById('folderNameInput').focus(), 100);
+                btnStack.appendChild(d);
             });
+            document.getElementById('alertOverlay').classList.add('active');
+            if (showInput) setTimeout(() => inp.focus(), 100);
+        }
+
+        function closeAlert() {
+            document.getElementById('alertOverlay').classList.remove('active');
         }
 
         function validatePassword(input) {
-            const val = input.value;
-            const hasMinLength = val.length >= 8;
-            const hasUpper = /[A-Z]/.test(val) || /[А-Я]/.test(val);
-            const hasNumber = /[0-9]/.test(val);
-            
-            const row = document.getElementById('controlsRow');
-            if (hasMinLength && hasUpper && hasNumber) {
-                row.classList.add('valid');
+            const v = input.value;
+            const r = document.getElementById('controlsRow');
+            if (isInit) {
+                if (v.length >= 5) r.classList.add('valid'); else r.classList.remove('valid');
             } else {
-                row.classList.remove('valid');
+                if (v.length >= 8 && /[A-ZА-Я]/.test(v) && /[0-9]/.test(v)) r.classList.add('valid');
+                else r.classList.remove('valid');
             }
         }
 
-        async function initiateLogin() {
-            if (!hasVisited) {
-                const proceed = await customAlert("Условия", "Продолжая, вы принимаете наши условия использования.");
-                if (proceed) {
-                    localStorage.setItem('sv_visited', 'true');
-                    executeTransition();
+        async function triggerAuth() {
+            const pass = document.getElementById('passInput').value;
+            if (!pass) return;
+            try {
+                if (!isInit) {
+                    openAlert('Условия', 'Продолжая, вы принимаете условия анонимного локального хранения.', [
+                        { text: 'Продолжить', type: 'primary', action: async () => {
+                            cryptoKey = await deriveKey(pass);
+                            const testEnc = await encryptString('test');
+                            localStorage.setItem('v_test', testEnc);
+                            localStorage.setItem('v_init', '1');
+                            isInit = true;
+                            authSuccess();
+                        }},
+                        { text: 'Отмена', type: 'secondary' }
+                    ]);
+                } else {
+                    const testEnc = localStorage.getItem('v_test');
+                    if (!testEnc) throw new Error('Auth logic error');
+                    const tempKey = await deriveKey(pass);
+                    try {
+                        const dec = await decryptString(testEnc, tempKey);
+                        if (dec === 'test') {
+                            cryptoKey = tempKey;
+                            authSuccess();
+                        } else {
+                            openAlert('Ошибка', 'Неверный пароль', [{text:'OK', type:'primary'}]);
+                        }
+                    } catch (e) {
+                        openAlert('Ошибка', 'Неверный пароль', [{text:'OK', type:'primary'}]);
+                    }
                 }
-            } else {
-                executeTransition();
+            } catch (err) {
+                console.error(err);
             }
         }
 
-        function executeTransition() {
-            const title = document.getElementById('mainTitle');
-            const desc = document.getElementById('mainDesc');
-            const controls = document.getElementById('controlsRow');
-            const counters = document.getElementById('countersGrid');
-            const frame = title.parentElement;
-
-            title.style.transform = 'translateY(100%)';
-            title.style.opacity = '0';
-            desc.style.opacity = '0';
-
-            controls.style.opacity = '0';
-            controls.style.transform = 'scale(0.95)';
-            controls.style.pointerEvents = 'none';
-
+        function authSuccess() {
+            const t = document.getElementById('mainTitle');
+            const d = document.getElementById('mainDesc');
+            const c = document.getElementById('controlsRow');
+            const f = t.parentElement;
+            t.style.transform = 'translateY(100%)';
+            t.style.opacity = '0';
+            d.style.opacity = '0';
+            c.style.opacity = '0';
+            c.style.transform = 'scale(0.95)';
+            c.style.pointerEvents = 'none';
             setTimeout(() => {
-                const newTitle = document.createElement('h1');
-                newTitle.className = 'title incoming';
-                newTitle.id = 'mainTitle';
-                newTitle.innerText = 'Воркспейс';
-                frame.appendChild(newTitle);
-
-                setTimeout(() => {
-                    newTitle.style.transform = 'translateY(0)';
-                    newTitle.style.opacity = '1';
-                }, 50);
-
-                desc.innerText = 'Храните здесь тексты, фотографии и видео анонимно';
-                desc.style.opacity = '1';
-
-                controls.remove();
-                counters.style.display = 'grid';
-                isWorkspaceUnlocked = true;
+                const nt = document.createElement('h1');
+                nt.className = 'title incoming';
+                nt.id = 'mainTitle';
+                nt.innerText = 'Воркспейс';
+                f.appendChild(nt);
+                setTimeout(() => { nt.style.transform = 'translateY(0)'; nt.style.opacity = '1'; }, 50);
+                d.innerText = 'Храните здесь тексты, фотографии и видео анонимно';
+                d.style.opacity = '1';
+                c.remove();
+                document.getElementById('countersGrid').style.display = 'grid';
+                unlocked = true;
+                updateCounters();
             }, 300);
         }
 
-        function handleSafeClick() {
-            if (!isWorkspaceUnlocked) return;
-            const viewport = document.getElementById('viewport');
-            const closedSafe = document.getElementById('safeClosed');
-            const openedSafe = document.getElementById('safeOpened');
-
-            if (!viewport.classList.contains('opened')) {
-                closedSafe.classList.add('hidden');
-                openedSafe.classList.remove('hidden');
-                viewport.classList.add('opened');
-            } else {
-                viewport.classList.remove('opened');
-                openedSafe.classList.add('hidden');
-                closedSafe.classList.remove('hidden');
-            }
+        async function deriveKey(pass) {
+            const enc = new TextEncoder();
+            const base = await window.crypto.subtle.importKey("raw", enc.encode(pass), {name:"PBKDF2"}, false, ["deriveKey"]);
+            return window.crypto.subtle.deriveKey(
+                {name:"PBKDF2", salt:SALT, iterations:100000, hash:"SHA-256"},
+                base, {name:"AES-GCM", length:256}, false, ["encrypt","decrypt"]
+            );
         }
 
-        function closeFolders(event) {
-            const viewport = document.getElementById('viewport');
-            if (viewport.classList.contains('opened')) {
-                viewport.classList.remove('opened');
+        function abToBase64(ab) {
+            let binary = '';
+            const bytes = new Uint8Array(ab);
+            for(let i=0; i<bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+            return btoa(binary);
+        }
+
+        function base64ToAb(b64) {
+            const binary = atob(b64);
+            const bytes = new Uint8Array(binary.length);
+            for(let i=0; i<binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            return bytes.buffer;
+        }
+
+        async function encryptString(str) {
+            const iv = window.crypto.getRandomValues(new Uint8Array(12));
+            const enc = new TextEncoder().encode(str);
+            const cipher = await window.crypto.subtle.encrypt({name:"AES-GCM", iv}, cryptoKey, enc);
+            const res = new Uint8Array(12 + cipher.byteLength);
+            res.set(iv, 0);
+            res.set(new Uint8Array(cipher), 12);
+            return abToBase64(res.buffer);
+        }
+
+        async function decryptString(b64, key = cryptoKey) {
+            const buf = base64ToAb(b64);
+            const iv = new Uint8Array(buf.slice(0, 12));
+            const data = buf.slice(12);
+            const plain = await window.crypto.subtle.decrypt({name:"AES-GCM", iv}, key, data);
+            return new TextDecoder().decode(plain);
+        }
+
+        async function encryptFile(ab) {
+            const iv = window.crypto.getRandomValues(new Uint8Array(12));
+            const cipher = await window.crypto.subtle.encrypt({name:"AES-GCM", iv}, cryptoKey, ab);
+            return { iv: Array.from(iv), data: cipher };
+        }
+
+        async function decryptFile(ivArr, cipher) {
+            const iv = new Uint8Array(ivArr);
+            return await window.crypto.subtle.decrypt({name:"AES-GCM", iv}, cryptoKey, cipher);
+        }
+
+        function initDB() {
+            return new Promise((res, rej) => {
+                const req = indexedDB.open(DB_NAME, DB_VER);
+                req.onupgradeneeded = e => {
+                    const d = e.target.result;
+                    if(!d.objectStoreNames.contains('items')) {
+                        const s = d.createObjectStore('items', {keyPath:'id'});
+                        s.createIndex('parent', 'parent', {unique:false});
+                    }
+                };
+                req.onsuccess = e => { db = e.target.result; res(); };
+                req.onerror = e => rej(e.target.error);
+            });
+        }
+
+        function saveItem(item) {
+            return new Promise((res, rej) => {
+                const tx = db.transaction('items', 'readwrite');
+                tx.objectStore('items').put(item);
+                tx.oncomplete = () => res();
+                tx.onerror = e => rej(e.target.error);
+            });
+        }
+
+        function getItems(parent) {
+            return new Promise((res, rej) => {
+                const tx = db.transaction('items', 'readonly');
+                const idx = tx.objectStore('items').index('parent');
+                const req = idx.getAll(parent);
+                req.onsuccess = () => res(req.result);
+                req.onerror = e => rej(e.target.error);
+            });
+        }
+
+        function deleteItem(id) {
+            return new Promise((res, rej) => {
+                const tx = db.transaction('items', 'readwrite');
+                tx.objectStore('items').delete(id);
+                tx.oncomplete = () => res();
+                tx.onerror = e => rej(e.target.error);
+            });
+        }
+
+        async function updateCounters() {
+            if(!unlocked) return;
+            const t = await getItems('root-text');
+            const i = await getItems('root-photo');
+            const o = await getItems('root-other');
+            document.getElementById('c-txt').innerText = t.length;
+            document.getElementById('c-img').innerText = i.length;
+            
+            let otherCount = o.length;
+            const countNested = async (pid) => {
+                const nested = await getItems(pid);
+                otherCount += nested.length;
+                for(let n of nested) { if(n.type === 'folder') await countNested(n.id); }
+            };
+            for(let item of o) { if(item.type === 'folder') await countNested(item.id); }
+            document.getElementById('c-oth').innerText = otherCount;
+        }
+
+        function handleSafeClick() {
+            if (!unlocked) return;
+            vibe();
+            const v = document.getElementById('viewport');
+            if (!v.classList.contains('opened')) {
+                document.getElementById('safeClosed').classList.add('hidden');
+                document.getElementById('safeOpened').classList.remove('hidden');
+                v.classList.add('opened');
+            } else {
+                v.classList.remove('opened');
                 document.getElementById('safeOpened').classList.add('hidden');
                 document.getElementById('safeClosed').classList.remove('hidden');
             }
         }
 
+        function closeFolders(e) {
+            const v = document.getElementById('viewport');
+            if (v.classList.contains('opened')) {
+                v.classList.remove('opened');
+                document.getElementById('safeOpened').classList.add('hidden');
+                document.getElementById('safeClosed').classList.remove('hidden');
+            }
+        }
 
-        function openTab(type) {
-            currentTabType = type;
-            document.getElementById('tabTitle').innerText = type;
-            const tab = document.getElementById('folderTab');
-            const rightDrop = document.getElementById('createInnerFolderBtn');
-            
-            if (type === 'Прочее') {
-                rightDrop.style.display = 'flex';
+        async function openRootTab(type) {
+            vibe();
+            let pid = '';
+            if (type === 'Тексты') pid = 'root-text';
+            else if (type === 'Фото') pid = 'root-photo';
+            else pid = 'root-other';
+            navStack = [{ id: pid, name: type }];
+            await renderCurrentFolder();
+            document.getElementById('folderTab').classList.add('active');
+        }
+
+        function popTab() {
+            vibe();
+            if (navStack.length > 1) {
+                navStack.pop();
+                renderCurrentFolder();
             } else {
-                rightDrop.style.display = 'none';
+                document.getElementById('folderTab').classList.remove('active');
+                updateCounters();
             }
-
-            document.getElementById('contentGrid').innerHTML = '';
-            tab.classList.add('active');
         }
 
-        function closeActiveTab() {
-            const tab = document.getElementById('folderTab');
-            tab.classList.remove('active');
+        async function renderCurrentFolder() {
+            const curr = navStack[navStack.length - 1];
+            currentFolderId = curr.id;
+            document.getElementById('tabTitle').innerText = curr.name;
+            
+            const addFBtn = document.getElementById('addFolderBtn');
+            if (currentFolderId.startsWith('root-other') || currentFolderId.startsWith('f-')) {
+                addFBtn.style.display = 'flex';
+            } else {
+                addFBtn.style.display = 'none';
+            }
+
+            const tc = document.getElementById('tabContent');
+            tc.innerHTML = '';
+            
+            if (currentFolderId === 'root-text') tc.className = 'tab-content list-content';
+            else tc.className = 'tab-content';
+
+            currentItems = await getItems(currentFolderId);
+            
+            for (let item of currentItems) {
+                if (item.type === 'folder') {
+                    const decName = await decryptString(item.meta);
+                    const d = document.createElement('div');
+                    d.className = 'item-card';
+                    d.innerHTML = `<div class="item-preview folder-icon-preview"><img src="folder.png" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%230A84FF\'><path d=\'M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z\'/></svg>'"></div><div class="item-label">${decName}</div>`;
+                    d.onclick = () => { vibe(); navStack.push({id: item.id, name: decName}); renderCurrentFolder(); };
+                    tc.appendChild(d);
+                } else if (item.type === 'text') {
+                    const decTitle = await decryptString(item.meta);
+                    const d = document.createElement('div');
+                    d.className = 'list-card liquid-glass';
+                    d.innerHTML = `<div class="list-card-title">${decTitle}</div>`;
+                    d.onclick = () => openText(item);
+                    tc.appendChild(d);
+                } else if (item.type === 'image' || item.type === 'video') {
+                    const decAb = await decryptFile(item.iv, item.data);
+                    const blob = new Blob([decAb], {type: item.mime});
+                    const url = URL.createObjectURL(blob);
+                    const d = document.createElement('div');
+                    d.className = 'item-card';
+                    if (item.type === 'image') d.innerHTML = `<div class="item-preview"><img src="${url}"></div>`;
+                    else d.innerHTML = `<div class="item-preview"><video src="${url}" style="width:100%;height:100%;object-fit:cover;"></video></div>`;
+                    d.onclick = () => openGallery(item.id);
+                    tc.appendChild(d);
+                } else {
+                    const decName = await decryptString(item.meta);
+                    const d = document.createElement('div');
+                    d.className = 'item-card';
+                    d.innerHTML = `<div class="item-preview"><span style="font-size:24px;color:rgba(255,255,255,0.5)">📄</span></div><div class="item-label">${decName}</div>`;
+                    d.onclick = () => openAlert('Файл', decName, [{text:'Удалить', type:'danger', action: () => delItem(item.id)}, {text:'Закрыть', type:'secondary'}]);
+                    tc.appendChild(d);
+                }
+            }
         }
 
-        async function createInnerFolder() {
-            const name = await promptFolderCreation();
-            if (name && name.trim() !== '') {
-                const grid = document.getElementById('contentGrid');
-                const div = document.createElement('div');
-                div.className = 'inner-folder';
-                div.innerHTML = `<img src="folder.png" onerror="this.outerHTML='<svg viewBox=\\\'0 0 100 100\\\'><path d=\\\'M10 80C10 85.5 14.5 90 20 90H80C85.5 90 90 85.5 90 80V40H10V80ZM45 10H20C14.5 10 10 14.5 10 20V30H90V25C90 19.5 85.5 15 80 15H55L45 10Z\\\' fill=\\\'#0A84FF\\\'/></svg>'"><span>${name}</span>`;
-                div.onclick = () => openTab(name);
-                grid.appendChild(div);
-            }
+        async function delItem(id) {
+            await deleteItem(id);
+            renderCurrentFolder();
+        }
+
+        function promptNewFolder() {
+            openAlert('Новая папка', 'Введите название', [
+                { text: 'Создать', type: 'primary', action: async (val) => {
+                    if (!val) return;
+                    const enc = await encryptString(val);
+                    await saveItem({ id: 'f-' + Date.now(), parent: currentFolderId, type: 'folder', meta: enc });
+                    renderCurrentFolder();
+                }},
+                { text: 'Отмена', type: 'secondary' }
+            ], true);
         }
 
         function triggerAddAction() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.style.display = 'none';
+            vibe();
+            if (currentFolderId === 'root-text') {
+                document.getElementById('teTitle').value = '';
+                document.getElementById('teBody').value = '';
+                document.getElementById('textEditor').classList.add('active');
+            } else if (currentFolderId === 'root-photo') {
+                const fp = document.getElementById('filePicker');
+                fp.accept = "image/*,video/*";
+                fp.click();
+            } else {
+                const fp = document.getElementById('filePicker');
+                fp.accept = "*/*";
+                fp.click();
+            }
+        }
+
+        function closeTextEditor() {
+            document.getElementById('textEditor').classList.remove('active');
+        }
+
+        async function saveTextData() {
+            const t = document.getElementById('teTitle').value || 'Без названия';
+            const b = document.getElementById('teBody').value;
+            if (!b) return closeTextEditor();
+            const encT = await encryptString(t);
+            const encB = await encryptFile(new TextEncoder().encode(b));
+            await saveItem({ id: 't-' + Date.now(), parent: currentFolderId, type: 'text', meta: encT, iv: encB.iv, data: encB.data });
+            closeTextEditor();
+            renderCurrentFolder();
+        }
+
+        async function openText(item) {
+            vibe();
+            const title = await decryptString(item.meta);
+            const bodyAb = await decryptFile(item.iv, item.data);
+            const body = new TextDecoder().decode(bodyAb);
+            document.getElementById('trTitle').innerText = title;
+            document.getElementById('trBody').innerText = body;
+            document.getElementById('textReader').classList.add('active');
             
-            input.onchange = e => {
-                const file = e.target.files[0];
-                if (!file) return;
-                
-                const grid = document.getElementById('contentGrid');
-                const div = document.createElement('div');
-                div.className = 'inner-folder';
-                
-                if (file.type.startsWith('image/')) {
-                    const url = URL.createObjectURL(file);
-                    div.innerHTML = `<img style="border-radius:12px; object-fit:cover;" src="${url}"><span>${file.name}</span>`;
-                    div.onclick = () => openPhotoViewer(url);
-                } else if (file.type.startsWith('text/')) {
-                    const reader = new FileReader();
-                    reader.onload = (re) => {
-                        div.innerHTML = `<img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'><rect x='4' y='2' width='16' height='20' rx='2' ry='2'/><line x1='8' y1='6' x2='16' y2='6'/><line x1='8' y1='10' x2='16' y2='10'/><line x1='8' y1='14' x2='12' y2='14'/></svg>"><span>${file.name}</span>`;
-                        div.onclick = () => openTextViewer(re.target.result);
-                    };
-                    reader.readAsText(file);
-                } else {
-                    div.innerHTML = `<img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'><circle cx='12' cy='12' r='10'/></svg>"><span>${file.name}</span>`;
-                }
-                
-                grid.appendChild(div);
+            document.getElementById('trTitle').onclick = () => {
+                openAlert('Действие', 'Удалить этот текст?', [
+                    {text:'Удалить', type:'danger', action: () => { delItem(item.id); closeTextReader(); }},
+                    {text:'Отмена', type:'secondary'}
+                ]);
             };
+        }
+
+        function closeTextReader() {
+            document.getElementById('textReader').classList.remove('active');
+        }
+
+        async function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            vibe();
+            const ab = await file.arrayBuffer();
+            const enc = await encryptFile(ab);
             
-            document.body.appendChild(input);
-            input.click();
-            document.body.removeChild(input);
+            let type = 'other';
+            if (file.type.startsWith('image/')) type = 'image';
+            else if (file.type.startsWith('video/')) type = 'video';
+            
+            let meta = await encryptString(file.name);
+            
+            await saveItem({ id: 'm-' + Date.now(), parent: currentFolderId, type, mime: file.type, meta, iv: enc.iv, data: enc.data });
+            e.target.value = '';
+            renderCurrentFolder();
         }
 
-
-        function openPhotoViewer(url) {
-            document.getElementById('viewerImage').src = url;
-            document.getElementById('photoViewer').classList.add('active');
-            resetZoom();
-        }
-
-        function closePhotoViewer() {
-            document.getElementById('photoViewer').classList.remove('active');
-            setTimeout(() => document.getElementById('viewerImage').src = '', 400);
-        }
-
-        function openTextViewer(text) {
-            document.getElementById('viewerText').innerText = text;
-            document.getElementById('textViewer').classList.add('active');
-        }
-
-        function closeTextViewer() {
-            document.getElementById('textViewer').classList.remove('active');
-        }
-
-        let currentZoom = 1;
-        let pX = 0, pY = 0;
-        
-        function resetZoom() {
-            currentZoom = 1;
-            pX = 0; pY = 0;
-            const img = document.getElementById('viewerImage');
-            img.style.transform = `translate(0px, 0px) scale(1)`;
-        }
-
-        const photoContainer = document.getElementById('photoContainer');
-        photoContainer.addEventListener('wheel', e => {
-            if(!document.getElementById('photoViewer').classList.contains('active')) return;
-            e.preventDefault();
-            currentZoom += e.deltaY * -0.01;
-            currentZoom = Math.min(Math.max(1, currentZoom), 5);
-            const img = document.getElementById('viewerImage');
-            img.style.transform = `translate(${pX}px, ${pY}px) scale(${currentZoom})`;
-        }, {passive: false});
-
-        document.querySelectorAll('.folder-item').forEach(folder => {
-            let isDragging = false, startX, startY;
-            const img = folder.querySelector('img');
-
-            folder.addEventListener('touchstart', e => {
-                if (!document.getElementById('viewport').classList.contains('opened')) return;
-                isDragging = true;
-                startX = e.touches[0].clientX;
-                startY = e.touches[0].clientY;
-            }, { passive: true });
-
-            folder.addEventListener('touchmove', e => {
-                if (!isDragging) return;
-                let deltaX = e.touches[0].clientX - startX;
-                let deltaY = e.touches[0].clientY - startY;
-                const maxDist = 18;
-                const dist = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-                if (dist > maxDist) {
-                    deltaX = (deltaX / dist) * maxDist;
-                    deltaY = (deltaY / dist) * maxDist;
+        async function openGallery(startId) {
+            vibe();
+            const lb = document.getElementById('lightbox');
+            const track = document.getElementById('lbTrack');
+            track.innerHTML = '';
+            
+            const mediaItems = currentItems.filter(i => i.type === 'image' || i.type === 'video');
+            let startIndex = 0;
+            
+            for (let i = 0; i < mediaItems.length; i++) {
+                const item = mediaItems[i];
+                if (item.id === startId) startIndex = i;
+                
+                const decAb = await decryptFile(item.iv, item.data);
+                const blob = new Blob([decAb], {type: item.mime});
+                const url = URL.createObjectURL(blob);
+                
+                const slide = document.createElement('div');
+                slide.className = 'lightbox-slide';
+                if (item.type === 'image') {
+                    const img = document.createElement('img');
+                    img.src = url;
+                    setupPinchZoom(slide, img);
+                    slide.appendChild(img);
+                } else {
+                    const vid = document.createElement('video');
+                    vid.src = url;
+                    vid.controls = true;
+                    vid.style.maxWidth = '100%';
+                    vid.style.maxHeight = '100%';
+                    slide.appendChild(vid);
                 }
-                folder.style.zIndex = '100';
-                img.style.transform = `translate(${deltaX}px, ${deltaY}px) skewX(${deltaX * 0.4}deg) scaleX(${1 + Math.abs(deltaX) * 0.003})`;
-            }, { passive: false });
+                
+                let holdTimer;
+                slide.onpointerdown = () => { holdTimer = setTimeout(() => { openAlert('Файл', 'Удалить этот файл?', [{text:'Удалить', type:'danger', action:()=>{delItem(item.id);closeLightbox();}},{text:'Отмена',type:'secondary'}]); }, 800); };
+                slide.onpointerup = () => clearTimeout(holdTimer);
+                slide.onpointermove = () => clearTimeout(holdTimer);
+                
+                track.appendChild(slide);
+            }
+            
+            lb.classList.add('active');
+            setTimeout(() => { track.scrollLeft = startIndex * window.innerWidth; }, 10);
+        }
 
-            folder.addEventListener('touchend', () => {
-                if (!isDragging) return;
-                isDragging = false;
-                folder.style.zIndex = '15';
-                img.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-                img.style.transform = 'translate(0, 0) skewX(0deg) scaleX(1)';
-                setTimeout(() => { img.style.transition = 'transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1)'; }, 300);
+        function closeLightbox() {
+            document.getElementById('lightbox').classList.remove('active');
+        }
+
+        function setupPinchZoom(container, img) {
+            let scale = 1, panning = false, pointX = 0, pointY = 0, start = { x: 0, y: 0 };
+            let distStart = 0;
+            
+            container.addEventListener('touchstart', e => {
+                if (e.touches.length === 2) {
+                    e.preventDefault();
+                    distStart = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                } else if (e.touches.length === 1 && scale > 1) {
+                    panning = true;
+                    start = { x: e.touches[0].clientX - pointX, y: e.touches[0].clientY - pointY };
+                }
+            }, {passive: false});
+
+            container.addEventListener('touchmove', e => {
+                if (e.touches.length === 2) {
+                    e.preventDefault();
+                    const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                    scale = Math.max(1, Math.min(scale * (dist / distStart), 4));
+                    distStart = dist;
+                    updateTransform();
+                } else if (panning && e.touches.length === 1) {
+                    e.preventDefault();
+                    pointX = e.touches[0].clientX - start.x;
+                    pointY = e.touches[0].clientY - start.y;
+                    updateTransform();
+                }
+            }, {passive: false});
+
+            container.addEventListener('touchend', e => {
+                if (e.touches.length < 2) {
+                    if (scale <= 1.05) {
+                        scale = 1; pointX = 0; pointY = 0;
+                        img.style.transition = 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)';
+                        updateTransform();
+                        setTimeout(() => img.style.transition = '', 300);
+                    }
+                    panning = false;
+                }
+            });
+
+            function updateTransform() {
+                img.style.transform = `translate(${pointX}px, ${pointY}px) scale(${scale})`;
+            }
+        }
+
+        document.querySelectorAll('.folder-item').forEach(f => {
+            let dragging = false, sx, sy, img = f.querySelector('img');
+            f.addEventListener('pointerdown', e => {
+                if(!unlocked) return;
+                dragging = true;
+                sx = e.clientX; sy = e.clientY;
+                f.style.zIndex = '100';
+            });
+            window.addEventListener('pointermove', e => {
+                if(!dragging) return;
+                let dx = e.clientX - sx, dy = e.clientY - sy;
+                const d = Math.hypot(dx, dy);
+                if(d > 20) { dx = (dx/d)*20; dy = (dy/d)*20; }
+                img.style.transform = `translate(${dx}px, ${dy}px) skewX(${dx*0.3}deg) scaleX(${1+Math.abs(dx)*0.005})`;
+            });
+            window.addEventListener('pointerup', () => {
+                if(!dragging) return;
+                dragging = false;
+                f.style.zIndex = '15';
+                img.style.transition = 'transform 0.5s cubic-bezier(0.32, 0.72, 0, 1)';
+                img.style.transform = 'translate(0,0) skewX(0) scaleX(1)';
+                setTimeout(()=>img.style.transition='transform 0.2s cubic-bezier(0.32, 0.72, 0, 1)', 500);
             });
         });
-
     </script>
 </body>
 </html>
+
+
